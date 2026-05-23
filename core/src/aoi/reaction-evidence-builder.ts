@@ -1,15 +1,11 @@
-import type { LegacyReactionEvidence } from '../legacy/legacy.types.js';
+import type { PrimitiveReactionEvidence } from '../primitives/primitives.types.js';
 
-/**
- * @deprecated Use @trader-agent/smart-money-indicator-core instead.
- * Removal target: release N+1.
- */
-export function hasLegacyReactionEvidence(e: LegacyReactionEvidence): boolean {
+export function hasSufficientReactionEvidence(e: PrimitiveReactionEvidence): boolean {
   const sweepOk = e.liquiditySweepEvidence?.strength === 'MEDIUM' || e.liquiditySweepEvidence?.strength === 'HIGH';
   const candleOk = e.candlePattern === 'ENGULFING' || e.candlePattern === 'STRONG_REJECTION' || e.candlePattern === 'PIN_BAR';
   return e.closeBackInDirection && (e.momentumShift || sweepOk || candleOk);
 }
 
-export function legacySweepStrengthFromEvidence(e: LegacyReactionEvidence): 'LOW' | 'MEDIUM' | 'HIGH' | undefined {
+export function sweepStrengthFromEvidence(e: PrimitiveReactionEvidence): 'LOW' | 'MEDIUM' | 'HIGH' | undefined {
   return e.liquiditySweepEvidence?.strength;
 }

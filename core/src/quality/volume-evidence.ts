@@ -1,10 +1,6 @@
-import type { LegacyScoreBonus, LegacyScorePenalty, LegacyVolumeEvidence } from '../legacy/legacy.types.js';
+import type { PrimitiveScoreBonus, PrimitiveScorePenalty, PrimitiveVolumeEvidence } from '../primitives/primitives.types.js';
 
-/**
- * @deprecated Use @trader-agent/smart-money-indicator-core instead.
- * Removal target: release N+1.
- */
-export function scoreLegacyVolumeEvidence(e: LegacyVolumeEvidence): LegacyScoreBonus[] | LegacyScorePenalty[] {
+export function scoreVolumeEvidence(e: PrimitiveVolumeEvidence): PrimitiveScoreBonus[] | PrimitiveScorePenalty[] {
   if (!e.available || !e.reliable) {
     return [{
       code: 'VOLUME_UNAVAILABLE_OR_UNRELIABLE',

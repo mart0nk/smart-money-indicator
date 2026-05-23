@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-  detectLegacyLiquiditySweep,
-  type LegacyCandle,
+  detectLiquiditySweep,
+  type Candle,
   type SwingPoint,
-} from '../../src/legacy/index.js';
+} from '../../src/index.js';
 
-function candle(overrides: Partial<LegacyCandle>): LegacyCandle {
+function candle(overrides: Partial<Candle>): Candle {
   return {
     symbol: 'BTCUSDT',
     timeframe: '5m',
@@ -38,15 +38,15 @@ function swing(overrides: Partial<SwingPoint>): SwingPoint {
   };
 }
 
-describe('legacy liquidity sweep compatibility', () => {
+describe('liquidity sweep primitives', () => {
   it('detects wick beyond plus close back as sweep', () => {
-    const result = detectLegacyLiquiditySweep(candle({ high: 106, close: 101 }), swing({ type: 'HIGH', price: 103 }), 10, 10);
+    const result = detectLiquiditySweep(candle({ high: 106, close: 101 }), swing({ type: 'HIGH', price: 103 }), 10, 10);
     expect(result?.direction).toBe('BUY_SIDE_SWEEP');
     expect(result?.closeBackBeyondLevel).toBe(true);
   });
 
   it('rejects BOS-style close beyond as sweep', () => {
-    const result = detectLegacyLiquiditySweep(candle({ high: 110, close: 108 }), swing({ type: 'HIGH', price: 103 }), 10, 10);
+    const result = detectLiquiditySweep(candle({ high: 110, close: 108 }), swing({ type: 'HIGH', price: 103 }), 10, 10);
     expect(result).toBeNull();
   });
 
@@ -54,7 +54,7 @@ describe('legacy liquidity sweep compatibility', () => {
     const candidate = swing({ confirmationStatus: 'CANDIDATE' });
     delete candidate.confirmedAtCandleIndex;
     delete candidate.confirmedAtOpenTime;
-    const result = detectLegacyLiquiditySweep(candle({ high: 106, close: 101 }), candidate, 10, 10);
+    const result = detectLiquiditySweep(candle({ high: 106, close: 101 }), candidate, 10, 10);
     expect(result).toBeNull();
   });
 });

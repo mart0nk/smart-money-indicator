@@ -40,7 +40,7 @@ export const DEFAULT_SMART_MONEY_ENGINE_CONFIG: SmartMoneyEngineConfig = {
   },
 };
 
-export const SMART_MONEY_LEGACY_COMPAT_CONFIG: SmartMoneyEngineConfig = {
+export const SMART_MONEY_PRIMITIVE_COMPAT_CONFIG: SmartMoneyEngineConfig = {
   ...DEFAULT_SMART_MONEY_ENGINE_CONFIG,
   fvg: {
     ...DEFAULT_SMART_MONEY_ENGINE_CONFIG.fvg,

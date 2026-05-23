@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
-  calculateLegacyMitigationPenalty,
-  hasLegacyReactionEvidence,
-  scoreLegacyVolumeEvidence,
-} from '../../src/legacy/index.js';
+  calculateMitigationPenalty,
+  hasSufficientReactionEvidence,
+  scoreVolumeEvidence,
+} from '../../src/index.js';
 
-describe('legacy mitigation, reaction and volume compatibility', () => {
+describe('mitigation, reaction and volume primitives', () => {
   it('preserves mitigation penalty behavior', () => {
-    expect(calculateLegacyMitigationPenalty({
+    expect(calculateMitigationPenalty({
       mitigationState: 'MITIGATED',
       fillPct: 100,
       touchCount: 3,
@@ -17,7 +17,7 @@ describe('legacy mitigation, reaction and volume compatibility', () => {
   });
 
   it('preserves reaction evidence behavior', () => {
-    expect(hasLegacyReactionEvidence({
+    expect(hasSufficientReactionEvidence({
       liquiditySweep: false,
       closeBackInDirection: true,
       momentumShift: false,
@@ -26,7 +26,7 @@ describe('legacy mitigation, reaction and volume compatibility', () => {
   });
 
   it('preserves volume evidence behavior', () => {
-    const result = scoreLegacyVolumeEvidence({
+    const result = scoreVolumeEvidence({
       available: true,
       reliable: true,
       volume: 100,

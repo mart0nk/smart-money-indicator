@@ -1,8 +1,8 @@
-export type LegacyTimeframe = '1m' | '5m' | '15m' | '1h' | '4h' | '1d';
+export type PrimitiveTimeframe = '1m' | '5m' | '15m' | '1h' | '4h' | '1d';
 
-export type LegacyCandle = {
+export type PrimitiveCandle = {
   symbol: string;
-  timeframe: LegacyTimeframe;
+  timeframe: PrimitiveTimeframe;
   openTime: Date;
   closeTime?: Date;
   open: number;
@@ -13,25 +13,25 @@ export type LegacyCandle = {
   closed: boolean;
 };
 
-export type LegacySwingPointType = 'HIGH' | 'LOW';
-export type LegacySwingPointConfirmationStatus = 'CANDIDATE' | 'CONFIRMED' | 'INVALIDATED';
+export type PrimitiveSwingPointType = 'HIGH' | 'LOW';
+export type PrimitiveSwingPointConfirmationStatus = 'CANDIDATE' | 'CONFIRMED' | 'INVALIDATED';
 
-export type LegacySwingPoint = {
+export type PrimitiveSwingPoint = {
   id: string;
-  type: LegacySwingPointType;
+  type: PrimitiveSwingPointType;
   price: number;
   candleIndex: number;
   candleOpenTime: number;
   leftBars: number;
   rightBars: number;
-  confirmationStatus: LegacySwingPointConfirmationStatus;
+  confirmationStatus: PrimitiveSwingPointConfirmationStatus;
   confirmedAtCandleIndex?: number;
   confirmedAtOpenTime?: number;
   strength: 'LOW' | 'MEDIUM' | 'HIGH';
   source: 'CLOSED_CANDLES_ONLY';
 };
 
-export type LegacyBosEvent = {
+export type PrimitiveBosEvent = {
   id: string;
   direction: 'BULLISH' | 'BEARISH';
   brokenSwingId: string;
@@ -50,17 +50,16 @@ export type LegacyBosEvent = {
   invalidatedAtOpenTime?: number;
 };
 
-export type LegacyMitigationState =
+export type PrimitiveMitigationState =
   | 'UNMITIGATED'
   | 'PARTIALLY_MITIGATED'
   | 'MITIGATED'
   | 'OVER_MITIGATED'
   | 'INVALIDATED';
 
-export type LegacyFvgZone = {
+export type PrimitiveFvgZone = {
   id: string;
   zoneId?: string;
-  legacyIdWasRandom?: false;
   direction: 'BULLISH' | 'BEARISH';
   upperLevel: number;
   lowerLevel: number;
@@ -72,7 +71,7 @@ export type LegacyFvgZone = {
   candleIndexNext: number;
   detectedAtCandleIndex: number;
   detectedAtOpenTime: number;
-  mitigationState: LegacyMitigationState;
+  mitigationState: PrimitiveMitigationState;
   fillPct: number;
   touchCount: number;
   lastTouchCandleIndex?: number;
@@ -80,10 +79,9 @@ export type LegacyFvgZone = {
   invalidatedAtCandleIndex?: number;
 };
 
-export type LegacyOrderBlock = {
+export type PrimitiveOrderBlock = {
   id: string;
   zoneId?: string;
-  legacyIdWasRandom?: false;
   direction: 'BULLISH' | 'BEARISH';
   candleIndex: number;
   candleOpenTime: number;
@@ -94,7 +92,7 @@ export type LegacyOrderBlock = {
   bosEventId: string;
   bosDirection: 'BULLISH' | 'BEARISH';
   bosLevel: number;
-  mitigationState: LegacyMitigationState;
+  mitigationState: PrimitiveMitigationState;
   fillPct: number;
   touchCount: number;
   lastTouchCandleIndex?: number;
@@ -103,11 +101,11 @@ export type LegacyOrderBlock = {
   strength: 'LOW' | 'MEDIUM' | 'HIGH';
 };
 
-export type LegacyLiquiditySweepDirection = 'BUY_SIDE_SWEEP' | 'SELL_SIDE_SWEEP';
+export type PrimitiveLiquiditySweepDirection = 'BUY_SIDE_SWEEP' | 'SELL_SIDE_SWEEP';
 
-export type LegacyLiquiditySweepEvidence = {
+export type PrimitiveLiquiditySweepEvidence = {
   detected: boolean;
-  direction: LegacyLiquiditySweepDirection;
+  direction: PrimitiveLiquiditySweepDirection;
   referenceLevelId?: string;
   referenceLevelType:
     | 'SWING_HIGH'
@@ -133,30 +131,30 @@ export type LegacyLiquiditySweepEvidence = {
   evidence: string[];
 };
 
-export type LegacyMitigationPenaltyInput = {
-  mitigationState: LegacyMitigationState;
+export type PrimitiveMitigationPenaltyInput = {
+  mitigationState: PrimitiveMitigationState;
   fillPct: number;
   touchCount: number;
   htfTrendAlignment: 'STRONG' | 'ALIGNED' | 'NEUTRAL' | 'AGAINST';
   relativeStrengthState: 'SUPPORTIVE' | 'NEUTRAL' | 'UNFAVORABLE';
 };
 
-export type LegacyReactionEvidence = {
+export type PrimitiveReactionEvidence = {
   liquiditySweep: boolean;
   closeBackInDirection: boolean;
   momentumShift: boolean;
-  liquiditySweepEvidence?: LegacyLiquiditySweepEvidence;
+  liquiditySweepEvidence?: PrimitiveLiquiditySweepEvidence;
   candlePattern?: 'ENGULFING' | 'STRONG_REJECTION' | 'PIN_BAR' | string;
 };
 
-export type LegacyScoreBonus = {
+export type PrimitiveScoreBonus = {
   code: string;
   source: 'SETUP_QUALITY';
   points: number;
   reason: string;
 };
 
-export type LegacyScorePenalty = {
+export type PrimitiveScorePenalty = {
   code: string;
   source: 'SETUP_QUALITY';
   points: number;
@@ -164,7 +162,7 @@ export type LegacyScorePenalty = {
   reason: string;
 };
 
-export type LegacyVolumeEvidence = {
+export type PrimitiveVolumeEvidence = {
   available: boolean;
   reliable: boolean;
   volume: number;

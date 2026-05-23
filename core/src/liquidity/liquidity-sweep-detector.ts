@@ -1,4 +1,4 @@
-import type { LegacyCandle, LegacyLiquiditySweepEvidence, LegacySwingPoint } from '../legacy/legacy.types.js';
+import type { PrimitiveCandle, PrimitiveLiquiditySweepEvidence, PrimitiveSwingPoint } from '../primitives/primitives.types.js';
 import type { LiquiditySweepEvidence, SmartMoneyCandle, SmartMoneyProof, Timeframe } from '../types/index.js';
 import { detectSmartMoneySwingPoints } from '../structure/swing-detector.js';
 import { isSmartMoneySwingUsableAt } from '../structure/swing-point.types.js';
@@ -11,32 +11,32 @@ export function detectSmartMoneyLiquiditySweeps(input: {
 }): LiquiditySweepEvidence[] {
   const sweeps: LiquiditySweepEvidence[] = [];
   for (const timeframe of ['5m', '15m', '1m'] as const) {
-    const candles = (input.candlesByTimeframe[timeframe] ?? []).map(toLegacyCandle);
+    const candles = (input.candlesByTimeframe[timeframe] ?? []).map(toPrimitiveCandle);
     const swings = detectSmartMoneySwingPoints(candles, { leftBars: 2, rightBars: 2 });
     for (let i = 0; i < candles.length; i += 1) {
       const candle = candles[i];
       if (candle === undefined) continue;
       for (const swing of swings) {
-        const legacy = detectLegacyLiquiditySweep(candle, swing, 0, i);
-        if (legacy === null) continue;
+        const sweep = detectLiquiditySweep(candle, swing, 0, i);
+        if (sweep === null) continue;
         sweeps.push({
-          sweepId: `${input.symbol}:${timeframe}:SWEEP:${legacy.direction}:${legacy.candleOpenTime}:${legacy.referenceLevel}`,
+          sweepId: `${input.symbol}:${timeframe}:SWEEP:${sweep.direction}:${sweep.candleOpenTime}:${sweep.referenceLevel}`,
           symbol: input.symbol,
           sourceTimeframe: timeframe,
-          side: legacy.direction === 'SELL_SIDE_SWEEP' ? 'SELL_SIDE' : 'BUY_SIDE',
-          referenceLevel: legacy.referenceLevel,
-          referenceType: legacy.referenceLevelType === 'SWING_HIGH' ? 'LOCAL_HIGH' : 'LOCAL_LOW',
-          sweptExtreme: legacy.wickExtreme,
-          closeBackPrice: legacy.direction === 'SELL_SIDE_SWEEP' ? candle.close : candle.close,
-          wickExtensionPct: legacy.wickExtensionPct * 100,
-          closeBackPct: legacy.closeBackDistancePct,
-          detectedAt: legacy.candleOpenTime,
-          detectedCandleTime: legacy.candleOpenTime,
+          side: sweep.direction === 'SELL_SIDE_SWEEP' ? 'SELL_SIDE' : 'BUY_SIDE',
+          referenceLevel: sweep.referenceLevel,
+          referenceType: sweep.referenceLevelType === 'SWING_HIGH' ? 'LOCAL_HIGH' : 'LOCAL_LOW',
+          sweptExtreme: sweep.wickExtreme,
+          closeBackPrice: candle.close,
+          wickExtensionPct: sweep.wickExtensionPct * 100,
+          closeBackPct: sweep.closeBackDistancePct,
+          detectedAt: sweep.candleOpenTime,
+          detectedCandleTime: sweep.candleOpenTime,
           rejectionConfirmed: true,
           followedByChoCh: false,
           freshness: 'FRESH',
           validForCandles: input.validForCandles,
-          expiresAt: legacy.candleOpenTime + input.validForCandles * timeframeMs(timeframe),
+          expiresAt: sweep.candleOpenTime + input.validForCandles * timeframeMs(timeframe),
           proof: input.proof,
         });
       }
@@ -45,21 +45,17 @@ export function detectSmartMoneyLiquiditySweeps(input: {
   return dedupeBy(sweeps, (sweep) => sweep.sweepId);
 }
 
-/**
- * @deprecated Use @trader-agent/smart-money-indicator-core instead.
- * Removal target: release N+1.
- */
-export function detectLegacyLiquiditySweep(
-  candle: LegacyCandle,
-  swing: LegacySwingPoint,
+export function detectLiquiditySweep(
+  candle: PrimitiveCandle,
+  swing: PrimitiveSwingPoint,
   atr: number,
   currentIndex: number
-): LegacyLiquiditySweepEvidence | null {
+): PrimitiveLiquiditySweepEvidence | null {
   if (!candle.closed || !isSmartMoneySwingUsableAt(swing, currentIndex)) return null;
   const isBuySideSweep = swing.type === 'HIGH' && candle.high > swing.price && candle.close < swing.price;
   const isSellSideSweep = swing.type === 'LOW' && candle.low < swing.price && candle.close > swing.price;
   if (!isBuySideSweep && !isSellSideSweep) return null;
-  const direction: LegacyLiquiditySweepEvidence['direction'] = isBuySideSweep ? 'BUY_SIDE_SWEEP' : 'SELL_SIDE_SWEEP';
+  const direction: PrimitiveLiquiditySweepEvidence['direction'] = isBuySideSweep ? 'BUY_SIDE_SWEEP' : 'SELL_SIDE_SWEEP';
   const wickExtreme = isBuySideSweep ? candle.high : candle.low;
   const wickExtension = Math.abs(wickExtreme - swing.price);
   const closeBackDistance = Math.abs(candle.close - swing.price);
@@ -82,16 +78,16 @@ export function detectLegacyLiquiditySweep(
   };
   const wickExtensionAtr = atr > 0 ? wickExtension / atr : undefined;
   const closeBackDistanceAtr = atr > 0 ? closeBackDistance / atr : undefined;
-  const partial: LegacyLiquiditySweepEvidence = {
+  const partial: PrimitiveLiquiditySweepEvidence = {
     ...base,
     ...(wickExtensionAtr !== undefined ? { wickExtensionAtr } : {}),
     ...(closeBackDistanceAtr !== undefined ? { closeBackDistanceAtr } : {}),
   };
-  const score = scoreLegacyLiquiditySweep(partial);
-  return { ...partial, strength: legacySweepStrengthFromScore(score) };
+  const score = scoreLiquiditySweep(partial);
+  return { ...partial, strength: sweepStrengthFromScore(score) };
 }
 
-export function scoreLegacyLiquiditySweep(e: LegacyLiquiditySweepEvidence): number {
+export function scoreLiquiditySweep(e: PrimitiveLiquiditySweepEvidence): number {
   let score = 0;
   if (e.wickExtensionAtr !== undefined) {
     if (e.wickExtensionAtr >= 0.5) score += 2;
@@ -105,13 +101,13 @@ export function scoreLegacyLiquiditySweep(e: LegacyLiquiditySweepEvidence): numb
   return score;
 }
 
-export function legacySweepStrengthFromScore(score: number): 'LOW' | 'MEDIUM' | 'HIGH' {
+export function sweepStrengthFromScore(score: number): 'LOW' | 'MEDIUM' | 'HIGH' {
   if (score >= 5) return 'HIGH';
   if (score >= 3) return 'MEDIUM';
   return 'LOW';
 }
 
-function toLegacyCandle(candle: SmartMoneyCandle): LegacyCandle {
+function toPrimitiveCandle(candle: SmartMoneyCandle): PrimitiveCandle {
   return {
     symbol: candle.symbol,
     timeframe: candle.timeframe,

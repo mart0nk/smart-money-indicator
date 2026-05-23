@@ -1,4 +1,4 @@
-import type { LegacyCandle, LegacyFvgZone } from '../legacy/legacy.types.js';
+import type { PrimitiveCandle, PrimitiveFvgZone } from '../primitives/primitives.types.js';
 import type { SmartMoneyEngineConfig, SmartMoneyFvgZone, SmartMoneyProof, Timeframe } from '../types/index.js';
 import { buildStableZoneId } from './zone-id.js';
 
@@ -18,16 +18,16 @@ export function detectSmartMoneyFvgZones(input: {
   proof: SmartMoneyProof;
   config: SmartMoneyEngineConfig;
 }): SmartMoneyFvgZone[] {
-  const legacyCandles = input.candles.map((candle) => ({
+  const primitiveCandles = input.candles.map((candle) => ({
     ...candle,
     openTime: new Date(candle.openTime),
     volume: 0,
   }));
-  const legacyOptions: { minGapBps?: number; impulseRule?: 'CANDLE_COLOR' | 'BODY_ATR' | 'NONE' } = {
+  const primitiveOptions: { minGapBps?: number; impulseRule?: 'CANDLE_COLOR' | 'BODY_ATR' | 'NONE' } = {
     impulseRule: input.config.fvg.impulseRule ?? 'CANDLE_COLOR',
   };
-  if (input.config.fvg.minGapBps !== undefined) legacyOptions.minGapBps = input.config.fvg.minGapBps;
-  return detectLegacyFvgZones(legacyCandles, 0, legacyOptions).map((zone) => ({
+  if (input.config.fvg.minGapBps !== undefined) primitiveOptions.minGapBps = input.config.fvg.minGapBps;
+  return detectFvgZones(primitiveCandles, 0, primitiveOptions).map((zone) => ({
     zoneId: zone.zoneId ?? zone.id,
     type: 'FVG' as const,
     side: zone.direction,
@@ -37,9 +37,9 @@ export function detectSmartMoneyFvgZones(input: {
     zoneHigh: zone.upperLevel,
     midpoint: zone.midpoint,
     sourceCandles: {
-      candle1Time: legacyCandles[zone.candleIndexPrev]!.openTime.getTime(),
-      candle2Time: legacyCandles[zone.candleIndexImpulse]!.openTime.getTime(),
-      candle3Time: legacyCandles[zone.candleIndexNext]!.openTime.getTime(),
+      candle1Time: primitiveCandles[zone.candleIndexPrev]!.openTime.getTime(),
+      candle2Time: primitiveCandles[zone.candleIndexImpulse]!.openTime.getTime(),
+      candle3Time: primitiveCandles[zone.candleIndexNext]!.openTime.getTime(),
     },
     createdAt: zone.detectedAtOpenTime,
     availableFrom: zone.detectedAtOpenTime,
@@ -49,16 +49,12 @@ export function detectSmartMoneyFvgZones(input: {
   }));
 }
 
-/**
- * @deprecated Use @trader-agent/smart-money-indicator-core instead.
- * Removal target: release N+1.
- */
-export function detectLegacyFvgZones(
-  candles: readonly LegacyCandle[],
+export function detectFvgZones(
+  candles: readonly PrimitiveCandle[],
   atr: number,
   options?: { minGapBps?: number; impulseRule?: 'CANDLE_COLOR' | 'BODY_ATR' | 'NONE' }
-): LegacyFvgZone[] {
-  const results: LegacyFvgZone[] = [];
+): PrimitiveFvgZone[] {
+  const results: PrimitiveFvgZone[] = [];
   const impulseRule = options?.impulseRule ?? 'CANDLE_COLOR';
 
   for (let i = 0; i <= candles.length - 3; i += 1) {
@@ -69,7 +65,7 @@ export function detectLegacyFvgZones(
     if (!prev.closed || !impulse.closed || !next.closed) continue;
 
     if (next.low > prev.high && impulsePasses(impulse, 'BULLISH', impulseRule, atr)) {
-      const zone = buildLegacyFvg({
+      const zone = buildFvg({
         symbol: next.symbol,
         timeframe: next.timeframe,
         direction: 'BULLISH',
@@ -86,7 +82,7 @@ export function detectLegacyFvgZones(
     }
 
     if (next.high < prev.low && impulsePasses(impulse, 'BEARISH', impulseRule, atr)) {
-      const zone = buildLegacyFvg({
+      const zone = buildFvg({
         symbol: next.symbol,
         timeframe: next.timeframe,
         direction: 'BEARISH',
@@ -105,7 +101,7 @@ export function detectLegacyFvgZones(
   return results;
 }
 
-function buildLegacyFvg(input: {
+function buildFvg(input: {
   symbol: string;
   timeframe: string;
   direction: 'BULLISH' | 'BEARISH';
@@ -116,7 +112,7 @@ function buildLegacyFvg(input: {
   candleIndexImpulse: number;
   candleIndexNext: number;
   atr: number;
-}): LegacyFvgZone {
+}): PrimitiveFvgZone {
   const gapSize = input.upperLevel - input.lowerLevel;
   const midpoint = (input.upperLevel + input.lowerLevel) / 2;
   const zoneId = buildStableZoneId({
@@ -131,7 +127,6 @@ function buildLegacyFvg(input: {
   return {
     id: zoneId,
     zoneId,
-    legacyIdWasRandom: false,
     direction: input.direction,
     upperLevel: input.upperLevel,
     lowerLevel: input.lowerLevel,
@@ -150,13 +145,13 @@ function buildLegacyFvg(input: {
   };
 }
 
-function impulsePasses(candle: LegacyCandle, side: 'BULLISH' | 'BEARISH', rule: 'CANDLE_COLOR' | 'BODY_ATR' | 'NONE', atr: number): boolean {
+function impulsePasses(candle: PrimitiveCandle, side: 'BULLISH' | 'BEARISH', rule: 'CANDLE_COLOR' | 'BODY_ATR' | 'NONE', atr: number): boolean {
   if (rule === 'NONE') return true;
   if (rule === 'BODY_ATR') return atr > 0 && Math.abs(candle.close - candle.open) / atr >= 0.5;
   return side === 'BULLISH' ? candle.close > candle.open : candle.close < candle.open;
 }
 
-function passesMinGap(zone: LegacyFvgZone, minGapBps: number | undefined): boolean {
+function passesMinGap(zone: PrimitiveFvgZone, minGapBps: number | undefined): boolean {
   if (minGapBps === undefined) return true;
   return (zone.gapSize / zone.lowerLevel) * 10_000 >= minGapBps;
 }

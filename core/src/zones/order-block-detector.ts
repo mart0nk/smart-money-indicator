@@ -1,4 +1,4 @@
-import type { LegacyCandle, LegacyOrderBlock, LegacySwingPoint } from '../legacy/legacy.types.js';
+import type { PrimitiveCandle, PrimitiveOrderBlock, PrimitiveSwingPoint } from '../primitives/primitives.types.js';
 import type { SmartMoneyEngineConfig, SmartMoneyOrderBlockZone, SmartMoneyProof, Timeframe } from '../types/index.js';
 import { detectSmartMoneyBos } from '../structure/bos-detector.js';
 import { detectSmartMoneySwingPoints } from '../structure/swing-detector.js';
@@ -21,16 +21,16 @@ export function detectSmartMoneyOrderBlockZones(input: {
   proof: SmartMoneyProof;
   config: SmartMoneyEngineConfig;
 }): SmartMoneyOrderBlockZone[] {
-  const legacyCandles: LegacyCandle[] = input.candles.map((candle) => ({
+  const primitiveCandles: PrimitiveCandle[] = input.candles.map((candle) => ({
     ...candle,
     openTime: new Date(candle.openTime),
     volume: 0,
   }));
-  const swings = detectSmartMoneySwingPoints(legacyCandles, {
+  const swings = detectSmartMoneySwingPoints(primitiveCandles, {
     leftBars: input.config.structure.swingPivotLeft,
     rightBars: input.config.structure.swingPivotRight,
   });
-  return detectLegacyOrderBlocks(legacyCandles, swings, 0, input.config.orderBlock.maxCandlesBackFromBos).map((ob) => ({
+  return detectOrderBlocks(primitiveCandles, swings, 0, input.config.orderBlock.maxCandlesBackFromBos).map((ob) => ({
     zoneId: ob.zoneId ?? ob.id,
     type: 'ORDER_BLOCK' as const,
     side: ob.direction,
@@ -49,16 +49,12 @@ export function detectSmartMoneyOrderBlockZones(input: {
   }));
 }
 
-/**
- * @deprecated Use @trader-agent/smart-money-indicator-core instead.
- * Removal target: release N+1.
- */
-export function detectLegacyOrderBlocks(
-  candles: readonly LegacyCandle[],
-  swingPoints: readonly LegacySwingPoint[],
+export function detectOrderBlocks(
+  candles: readonly PrimitiveCandle[],
+  swingPoints: readonly PrimitiveSwingPoint[],
   atr: number,
   lookback = 5
-): LegacyOrderBlock[] {
+): PrimitiveOrderBlock[] {
   const seenSwingIds = new Set<string>();
   const bosEvents = [];
 
@@ -76,7 +72,7 @@ export function detectLegacyOrderBlocks(
     }
   }
 
-  const results: LegacyOrderBlock[] = [];
+  const results: PrimitiveOrderBlock[] = [];
   for (const bos of bosEvents) {
     if (!bos.confirmed) continue;
     const startIdx = Math.max(0, bos.breakCandleIndex - lookback);
@@ -115,7 +111,6 @@ export function detectLegacyOrderBlocks(
     results.push({
       id: zoneId,
       zoneId,
-      legacyIdWasRandom: false,
       direction: bos.direction,
       candleIndex: obCandleIndex,
       candleOpenTime: obCandle.openTime.getTime(),
@@ -136,7 +131,7 @@ export function detectLegacyOrderBlocks(
   return results;
 }
 
-function computeStrength(candle: LegacyCandle, atr: number): 'LOW' | 'MEDIUM' | 'HIGH' {
+function computeStrength(candle: PrimitiveCandle, atr: number): 'LOW' | 'MEDIUM' | 'HIGH' {
   if (atr === 0) return 'MEDIUM';
   const ratio = Math.abs(candle.close - candle.open) / atr;
   if (ratio >= 1.0) return 'HIGH';

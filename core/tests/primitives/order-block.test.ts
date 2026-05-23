@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-  detectLegacyOrderBlocks,
-  type LegacyCandle,
+  detectOrderBlocks,
+  type Candle,
   type SwingPoint,
-} from '../../src/legacy/index.js';
+} from '../../src/index.js';
 
-function candle(i: number, open: number, high: number, low: number, close: number): LegacyCandle {
+function candle(i: number, open: number, high: number, low: number, close: number): Candle {
   return {
     symbol: 'BTCUSDT',
     timeframe: '15m',
@@ -36,9 +36,9 @@ function swing(): SwingPoint {
   };
 }
 
-describe('legacy order block compatibility', () => {
+describe('order block primitives', () => {
   it('preserves OB as last opposite candle before confirmed BOS', () => {
-    const obs = detectLegacyOrderBlocks([
+    const obs = detectOrderBlocks([
       candle(0, 108, 110, 106, 109),
       candle(1, 109, 111, 105, 106),
       candle(2, 106, 108, 104, 107),
@@ -50,6 +50,6 @@ describe('legacy order block compatibility', () => {
     expect(obs[0]!.direction).toBe('BULLISH');
     expect(obs[0]!.candleIndex).toBe(1);
     expect(obs[0]!.id).toBe(obs[0]!.zoneId);
-    expect(obs[0]!.legacyIdWasRandom).toBe(false);
+    expect(obs[0]!.zoneId).toBeDefined();
   });
 });

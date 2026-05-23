@@ -1,12 +1,12 @@
-import type { LegacyCandle, LegacySwingPoint } from '../legacy/legacy.types.js';
+import type { PrimitiveCandle, PrimitiveSwingPoint } from '../primitives/primitives.types.js';
 
 export function detectSmartMoneySwingPoints(
-  candles: readonly LegacyCandle[],
+  candles: readonly PrimitiveCandle[],
   options?: { leftBars?: number; rightBars?: number }
-): LegacySwingPoint[] {
+): PrimitiveSwingPoint[] {
   const leftBars = options?.leftBars ?? 2;
   const rightBars = options?.rightBars ?? 2;
-  const results: LegacySwingPoint[] = [];
+  const results: PrimitiveSwingPoint[] = [];
 
   for (let i = leftBars; i < candles.length; i += 1) {
     const candle = candles[i];
@@ -28,7 +28,7 @@ export function detectSmartMoneySwingPoints(
 
 type CandidateResult = 'CONFIRMED' | 'CANDIDATE' | 'NONE';
 
-function checkSwingHighCandidate(candles: readonly LegacyCandle[], i: number, leftBars: number, rightBars: number): CandidateResult {
+function checkSwingHighCandidate(candles: readonly PrimitiveCandle[], i: number, leftBars: number, rightBars: number): CandidateResult {
   const pivot = candles[i];
   if (pivot === undefined) return 'NONE';
   for (let j = i - leftBars; j < i; j += 1) {
@@ -45,7 +45,7 @@ function checkSwingHighCandidate(candles: readonly LegacyCandle[], i: number, le
   return availableRightBars < rightBars ? 'CANDIDATE' : 'CONFIRMED';
 }
 
-function checkSwingLowCandidate(candles: readonly LegacyCandle[], i: number, leftBars: number, rightBars: number): CandidateResult {
+function checkSwingLowCandidate(candles: readonly PrimitiveCandle[], i: number, leftBars: number, rightBars: number): CandidateResult {
   const pivot = candles[i];
   if (pivot === undefined) return 'NONE';
   for (let j = i - leftBars; j < i; j += 1) {
@@ -63,13 +63,13 @@ function checkSwingLowCandidate(candles: readonly LegacyCandle[], i: number, lef
 }
 
 function buildSwingPoint(
-  candles: readonly LegacyCandle[],
+  candles: readonly PrimitiveCandle[],
   i: number,
   type: 'HIGH' | 'LOW',
   leftBars: number,
   rightBars: number,
   candidateResult: 'CONFIRMED' | 'CANDIDATE'
-): LegacySwingPoint {
+): PrimitiveSwingPoint {
   const candle = candles[i]!;
   const confirmedIdx = i + rightBars;
   const confirmingCandle = candles[confirmedIdx];
@@ -95,7 +95,7 @@ function buildSwingPoint(
   };
 }
 
-function computeStrength(candles: readonly LegacyCandle[], i: number, type: 'HIGH' | 'LOW', leftBars: number, rightBars: number): 'LOW' | 'MEDIUM' | 'HIGH' {
+function computeStrength(candles: readonly PrimitiveCandle[], i: number, type: 'HIGH' | 'LOW', leftBars: number, rightBars: number): 'LOW' | 'MEDIUM' | 'HIGH' {
   const pivot = candles[i];
   if (pivot === undefined) return 'LOW';
   const pivotValue = type === 'HIGH' ? pivot.high : pivot.low;

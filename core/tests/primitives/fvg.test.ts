@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { detectLegacyFvgZones, type LegacyCandle } from '../../src/legacy/index.js';
+import { detectFvgZones, type Candle } from '../../src/index.js';
 
-function candle(i: number, open: number, high: number, low: number, close: number, closed = true): LegacyCandle {
+function candle(i: number, open: number, high: number, low: number, close: number, closed = true): Candle {
   return {
     symbol: 'BTCUSDT',
     timeframe: '15m',
@@ -15,9 +15,9 @@ function candle(i: number, open: number, high: number, low: number, close: numbe
   };
 }
 
-describe('legacy FVG compatibility', () => {
+describe('FVG primitives', () => {
   it('preserves bullish impulse candle color rule and stable id mapping', () => {
-    const zones = detectLegacyFvgZones([
+    const zones = detectFvgZones([
       candle(0, 100, 105, 98, 104),
       candle(1, 104, 115, 103, 114),
       candle(2, 114, 120, 108, 119),
@@ -26,12 +26,12 @@ describe('legacy FVG compatibility', () => {
     expect(zones).toHaveLength(1);
     expect(zones[0]!.direction).toBe('BULLISH');
     expect(zones[0]!.id).toBe(zones[0]!.zoneId);
-    expect(zones[0]!.legacyIdWasRandom).toBe(false);
+    expect(zones[0]!.zoneId).toBeDefined();
     expect(zones[0]!.gapSizeAtr).toBeCloseTo(0.3);
   });
 
   it('rejects bullish FVG when impulse candle is bearish', () => {
-    const zones = detectLegacyFvgZones([
+    const zones = detectFvgZones([
       candle(0, 100, 105, 98, 104),
       candle(1, 115, 116, 103, 106),
       candle(2, 106, 120, 108, 119),

@@ -1,12 +1,12 @@
-import type { LegacyBosEvent, LegacyCandle, LegacySwingPoint } from '../legacy/legacy.types.js';
+import type { PrimitiveBosEvent, PrimitiveCandle, PrimitiveSwingPoint } from '../primitives/primitives.types.js';
 import { isSmartMoneySwingUsableAt } from './swing-point.types.js';
 
 export function detectSmartMoneyBos(
-  candle: LegacyCandle,
+  candle: PrimitiveCandle,
   candleIndex: number,
-  swing: LegacySwingPoint,
+  swing: PrimitiveSwingPoint,
   atr: number
-): LegacyBosEvent | null {
+): PrimitiveBosEvent | null {
   if (!candle.closed || !isSmartMoneySwingUsableAt(swing, candleIndex)) return null;
   if (swing.type === 'HIGH') {
     const wickBreak = candle.high > swing.price;
@@ -21,14 +21,14 @@ export function detectSmartMoneyBos(
 }
 
 function buildBosEvent(
-  candle: LegacyCandle,
+  candle: PrimitiveCandle,
   candleIndex: number,
-  swing: LegacySwingPoint,
+  swing: PrimitiveSwingPoint,
   atr: number,
   direction: 'BULLISH' | 'BEARISH',
   confirmed: boolean,
   wickOnlyBreak: boolean
-): LegacyBosEvent {
+): PrimitiveBosEvent {
   const displacementScore = atr > 0 ? Math.abs(candle.close - candle.open) / atr : 0;
   const atrMultiple = atr > 0 ? Math.abs(candle.close - swing.price) / atr : 0;
   return {

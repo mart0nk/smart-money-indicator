@@ -6,8 +6,7 @@
     "declarationMap": true,
     "sourceMap": true,
     "paths": {
-      "@trader-agent/smart-money-indicator-core": ["./../core/dist/index.d.ts"],
-      "@trader-agent/smart-money-indicator-core/legacy": ["./../core/dist/legacy/index.d.ts"]
+      "@trader-agent/smart-money-indicator-core": ["./../core/dist/index.d.ts"]
     }
   },
   "include": ["src"],

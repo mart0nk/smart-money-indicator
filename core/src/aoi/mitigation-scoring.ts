@@ -1,10 +1,6 @@
-import type { LegacyMitigationPenaltyInput, LegacyMitigationState } from '../legacy/legacy.types.js';
+import type { PrimitiveMitigationPenaltyInput, PrimitiveMitigationState } from '../primitives/primitives.types.js';
 
-/**
- * @deprecated Use @trader-agent/smart-money-indicator-core instead.
- * Removal target: release N+1.
- */
-export function calculateLegacyMitigationPenalty(input: LegacyMitigationPenaltyInput): number {
+export function calculateMitigationPenalty(input: PrimitiveMitigationPenaltyInput): number {
   let penalty = 0;
   switch (input.mitigationState) {
     case 'UNMITIGATED': penalty = 0; break;
@@ -22,6 +18,6 @@ export function calculateLegacyMitigationPenalty(input: LegacyMitigationPenaltyI
   return penalty;
 }
 
-export function isLegacyMitigationInvalidated(state: LegacyMitigationState): boolean {
+export function isMitigationInvalidated(state: PrimitiveMitigationState): boolean {
   return state === 'INVALIDATED';
 }

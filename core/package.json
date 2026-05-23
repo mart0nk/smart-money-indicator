@@ -6,7 +6,6 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
-    "./legacy": "./dist/legacy/index.js",
     "./types": "./dist/types/index.js",
     "./config": "./dist/config/index.js",
     "./diagnostics": "./dist/diagnostics/index.js"

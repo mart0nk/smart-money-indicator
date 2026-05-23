@@ -27,14 +27,14 @@ CHoCH is a close beyond the opposite protected swing against the current structu
 Bullish FVG:
 
 - candle 1 high is below candle 3 low
-- optional legacy-compatible impulse filter requires candle 2 to close above open
+- optional candle-color impulse filter requires candle 2 to close above open
 - zone low is candle 1 high
 - zone high is candle 3 low
 
 Bearish FVG:
 
 - candle 1 low is above candle 3 high
-- optional legacy-compatible impulse filter requires candle 2 to close below open
+- optional candle-color impulse filter requires candle 2 to close below open
 - zone low is candle 3 high
 - zone high is candle 1 low
 

@@ -1,6 +1,6 @@
-import type { LegacySwingPoint } from '../legacy/legacy.types.js';
+import type { PrimitiveSwingPoint } from '../primitives/primitives.types.js';
 
-export type SmartMoneySwingPoint = LegacySwingPoint;
+export type SmartMoneySwingPoint = PrimitiveSwingPoint;
 
 export function isSmartMoneySwingUsableAt(
   swing: SmartMoneySwingPoint,
