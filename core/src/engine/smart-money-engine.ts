@@ -28,6 +28,8 @@ import type {
   SmartMoneyStructure,
   SmartMoneyTimeframeState,
   SmartMoneyZone,
+  SmcSourceTimeframe,
+  SweepDiagnosticsTimeframe,
   Timeframe,
 } from '../types/index.js';
 
@@ -69,19 +71,20 @@ export function evaluateSmartMoneySnapshot(input: EvaluateSmartMoneyInput): Eval
   const zonesById: Record<string, SmartMoneyZone> = { ...previousZones };
   const lastStructureByTimeframe: Partial<Record<Timeframe, SmartMoneyStructure>> = { ...(previousState?.lastStructureByTimeframe ?? {}) };
 
-  for (const timeframe of config.timeframes) {
+  for (const timeframe of config.sourceZoneTimeframes) {
     const candles = validation.candlesByTimeframe[timeframe] ?? [];
     if (candles.length === 0) continue;
     const structure = deriveStructure(candles);
     lastStructureByTimeframe[timeframe] = structure;
+    const sourceCandles = candles.map((candle) => ({ ...candle, timeframe }));
 
-    for (const zone of detectSmartMoneyFvgZones({ symbol, timeframe, candles, proof, config })) {
+    for (const zone of detectSmartMoneyFvgZones({ symbol, timeframe, candles: sourceCandles, proof, config })) {
       const existing = zonesById[zone.zoneId] as SmartMoneyFvgZone | undefined;
       zonesById[zone.zoneId] = updateFvgLifecycle(existing ?? zone, candles, input.cursorMs, proof);
       pushEventOnce(events, previousEventIds, makeEvent({ symbol, timeframe, cursorMs: input.cursorMs, type: 'FVG_DETECTED', zoneId: zone.zoneId, proof, details: { side: zone.side } }));
     }
 
-    for (const zone of detectSmartMoneyOrderBlockZones({ symbol, timeframe, candles, proof, config })) {
+    for (const zone of detectSmartMoneyOrderBlockZones({ symbol, timeframe, candles: sourceCandles, proof, config })) {
       const existing = zonesById[zone.zoneId] as SmartMoneyOrderBlockZone | undefined;
       zonesById[zone.zoneId] = updateOrderBlockLifecycle(existing ?? zone, candles, input.cursorMs, proof);
       pushEventOnce(events, previousEventIds, makeEvent({ symbol, timeframe, cursorMs: input.cursorMs, type: 'ORDER_BLOCK_DETECTED', zoneId: zone.zoneId, proof, details: { side: zone.side } }));
@@ -96,6 +99,8 @@ export function evaluateSmartMoneySnapshot(input: EvaluateSmartMoneyInput): Eval
       candlesByTimeframe: validation.candlesByTimeframe,
       proof,
       validForCandles: config.sweeps.validForCandles,
+      timeframes: config.sweepTimeframes,
+      minWickExtensionBps: config.sweeps.minWickExtensionBps,
     }),
   ].map((sweep) => refreshSweep(sweep, input.cursorMs));
 
@@ -116,7 +121,7 @@ export function evaluateSmartMoneySnapshot(input: EvaluateSmartMoneyInput): Eval
   const zoneList = Object.values(zonesById);
   const activeAois = zoneList.map((zone) => toAoi(zone, proof, activeSweeps)).filter((aoi) => aoi.state !== 'INVALIDATED');
   for (const aoi of activeAois) {
-    if (aoi.state === 'REACTED') {
+    if (aoi.state === 'REACTION_CONFIRMED') {
       reactions.push({
         reactionId: `reaction:${aoi.aoiId}:${input.cursorMs}`,
         symbol,
@@ -168,7 +173,7 @@ export function evaluateSmartMoneySnapshot(input: EvaluateSmartMoneyInput): Eval
 
 function detectFvgZones(input: {
   symbol: string;
-  timeframe: Timeframe;
+  timeframe: SmcSourceTimeframe;
   candles: SmartMoneyCandle[];
   proof: SmartMoneyProof;
   config: SmartMoneyEngineConfig;
@@ -195,7 +200,7 @@ function detectFvgZones(input: {
 
 function makeFvgZone(input: {
   symbol: string;
-  timeframe: Timeframe;
+  timeframe: SmcSourceTimeframe;
   side: 'BULLISH' | 'BEARISH';
   zoneLow: number;
   zoneHigh: number;
@@ -206,17 +211,20 @@ function makeFvgZone(input: {
 }): SmartMoneyFvgZone {
   const midpoint = midpointOf(input.zoneLow, input.zoneHigh);
   return {
+    sourceId: `${input.symbol}:${input.timeframe}:FVG:SOURCE:${input.c3.openTime}:none`,
     zoneId: buildZoneId(input.symbol, input.timeframe, 'FVG', input.side, input.c3.openTime, input.zoneLow, input.zoneHigh),
     type: 'FVG',
     side: input.side,
     symbol: input.symbol,
     timeframe: input.timeframe,
+    sourceTimeframe: input.timeframe,
     zoneLow: input.zoneLow,
     zoneHigh: input.zoneHigh,
     midpoint,
     sourceCandles: { candle1Time: input.c1.openTime, candle2Time: input.c2.openTime, candle3Time: input.c3.openTime },
+    sourceCandleTime: input.c3.openTime,
     createdAt: input.c3.openTime,
-    availableFrom: input.c3.openTime,
+    availableFrom: input.c3.closeTime ?? input.c3.openTime,
     state: 'DETECTED',
     mitigationPct: 0,
     proof: input.proof,
@@ -225,7 +233,7 @@ function makeFvgZone(input: {
 
 function detectOrderBlocks(input: {
   symbol: string;
-  timeframe: Timeframe;
+  timeframe: SmcSourceTimeframe;
   candles: SmartMoneyCandle[];
   proof: SmartMoneyProof;
   config: SmartMoneyEngineConfig;
@@ -248,15 +256,18 @@ function detectOrderBlocks(input: {
       const bounds = orderBlockBounds(origin, input.config.orderBlock.zonePolicy, side);
       const zoneId = buildZoneId(input.symbol, input.timeframe, 'ORDER_BLOCK', side, origin.openTime, bounds.zoneLow, bounds.zoneHigh);
       zones.push({
+        sourceId: `${input.symbol}:${input.timeframe}:ORDER_BLOCK:SOURCE:${origin.openTime}:none`,
         zoneId,
         type: 'ORDER_BLOCK',
         side,
         symbol: input.symbol,
         timeframe: input.timeframe,
+        sourceTimeframe: input.timeframe,
         zoneLow: bounds.zoneLow,
         zoneHigh: bounds.zoneHigh,
         midpoint: midpointOf(bounds.zoneLow, bounds.zoneHigh),
         originCandleTime: origin.openTime,
+        sourceCandleTime: origin.openTime,
         displacementEventId: `${input.symbol}:${input.timeframe}:displacement:${current.openTime}`,
         createdAt: current.openTime,
         availableFrom: current.openTime,
@@ -271,9 +282,10 @@ function detectOrderBlocks(input: {
 }
 
 function updateFvgLifecycle(zone: SmartMoneyFvgZone, candles: SmartMoneyCandle[], cursorMs: number, proof: SmartMoneyProof): SmartMoneyFvgZone {
+  if (zone.state === 'INVALIDATED') return withQuality({ ...zone, proof });
   let next: SmartMoneyFvgZone = { ...zone, proof };
   for (const candle of candles) {
-    if (candle.openTime <= zone.availableFrom) continue;
+    if (candle.openTime < zone.availableFrom) continue;
     if (next.state === 'INVALIDATED') break;
     const invalidated = zone.side === 'BULLISH' ? candle.close < zone.zoneLow : candle.close > zone.zoneHigh;
     if (invalidated) {
@@ -283,25 +295,26 @@ function updateFvgLifecycle(zone: SmartMoneyFvgZone, candles: SmartMoneyCandle[]
     const mitigationPct = Math.max(next.mitigationPct, calculateMitigationPct(zone, candle));
     if (mitigationPct > 0 && next.firstReturnAt === undefined) {
       next = { ...next, state: 'FIRST_RETURN', firstReturnAt: candle.openTime, mitigationPct, proof };
-    } else if (mitigationPct >= 100) {
+    } else if (mitigationPct >= 100 && next.state !== 'REACTION_CONFIRMED') {
       next = { ...next, state: 'MITIGATED', mitigatedAt: candle.openTime, mitigationPct, proof };
-    } else if (mitigationPct > 0) {
+    } else if (mitigationPct > 0 && next.state !== 'REACTION_CONFIRMED') {
       next = { ...next, state: 'PARTIALLY_MITIGATED', mitigationPct, proof };
     } else if (next.state === 'DETECTED') {
       next = { ...next, state: 'ACTIVE', proof };
     }
     const reacted = mitigationPct >= 50 && (zone.side === 'BULLISH' ? candle.close > zone.midpoint : candle.close < zone.midpoint);
     if (reacted) {
-      next = { ...next, state: 'REACTED', reactedAt: cursorMs, mitigationPct, proof };
+      next = { ...next, state: 'REACTION_CONFIRMED', reactedAt: cursorMs, mitigationPct, proof };
     }
   }
   return withQuality(next);
 }
 
 function updateOrderBlockLifecycle(zone: SmartMoneyOrderBlockZone, candles: SmartMoneyCandle[], cursorMs: number, proof: SmartMoneyProof): SmartMoneyOrderBlockZone {
+  if (zone.state === 'INVALIDATED') return withQuality({ ...zone, proof });
   let next: SmartMoneyOrderBlockZone = { ...zone, proof };
   for (const candle of candles) {
-    if (candle.openTime <= zone.availableFrom) continue;
+    if (candle.openTime < zone.availableFrom) continue;
     if (next.state === 'INVALIDATED') break;
     const invalidated = zone.side === 'BULLISH' ? candle.close < zone.zoneLow : candle.close > zone.zoneHigh;
     if (invalidated) {
@@ -311,9 +324,9 @@ function updateOrderBlockLifecycle(zone: SmartMoneyOrderBlockZone, candles: Smar
     const mitigationPct = Math.max(next.mitigationPct, calculateMitigationPct(zone, candle));
     if (mitigationPct > 0 && next.firstTouchAt === undefined) {
       next = { ...next, state: 'PULLBACK_INTO_ZONE', firstTouchAt: candle.openTime, mitigationPct, proof };
-    } else if (mitigationPct >= 100) {
+    } else if (mitigationPct >= 100 && next.state !== 'REACTION_CONFIRMED') {
       next = { ...next, state: 'MITIGATED', mitigationPct, proof };
-    } else if (mitigationPct > 0) {
+    } else if (mitigationPct > 0 && next.state !== 'REACTION_CONFIRMED') {
       next = { ...next, state: 'PARTIALLY_MITIGATED', mitigationPct, proof };
     } else if (next.state === 'DETECTED') {
       next = { ...next, state: 'ACTIVE', proof };
@@ -335,7 +348,7 @@ function detectLiquiditySweeps(input: {
   minWickExtensionBps: number;
 }): LiquiditySweepEvidence[] {
   const sweeps: LiquiditySweepEvidence[] = [];
-  for (const timeframe of ['5m', '15m', '1m'] as const) {
+  for (const timeframe of ['15m', '5m', '3m'] as const) {
     const candles = input.candlesByTimeframe[timeframe] ?? [];
     for (let i = 2; i < candles.length; i += 1) {
       const reference = candles[i - 1];
@@ -360,7 +373,7 @@ function detectLiquiditySweeps(input: {
 
 function makeSweep(input: {
   symbol: string;
-  timeframe: '1m' | '5m' | '15m';
+  timeframe: SweepDiagnosticsTimeframe;
   side: 'SELL_SIDE' | 'BUY_SIDE';
   referenceLevel: number;
   referenceType: 'LOCAL_HIGH' | 'LOCAL_LOW';
@@ -464,8 +477,8 @@ function toAoi(zone: SmartMoneyZone, proof: SmartMoneyProof, sweeps: LiquiditySw
     .map((sweep) => sweep.sweepId);
   const state = zone.state === 'INVALIDATED'
     ? 'INVALIDATED'
-    : zone.state === 'REACTED' || zone.state === 'REACTION_CONFIRMED'
-      ? 'REACTED'
+    : zone.state === 'REACTION_CONFIRMED'
+      ? 'REACTION_CONFIRMED'
       : zone.state === 'FIRST_RETURN'
         ? 'FIRST_RETURN'
         : zone.state === 'PARTIALLY_MITIGATED'
@@ -479,8 +492,11 @@ function toAoi(zone: SmartMoneyZone, proof: SmartMoneyProof, sweeps: LiquiditySw
   if (relatedSweepIds.length > 0) related.relatedSweepIds = relatedSweepIds;
   return {
     aoiId: `aoi:${zone.zoneId}`,
+    sourceId: zone.sourceId,
+    zoneId: zone.zoneId,
     symbol: zone.symbol,
     timeframe: zone.timeframe,
+    sourceTimeframe: zone.sourceTimeframe,
     type: zone.type,
     side: zone.side,
     zoneLow: zone.zoneLow,
@@ -715,7 +731,7 @@ function withQuality<T extends SmartMoneyZone>(zone: T): T {
 
 function defaultQuality(zone: SmartMoneyZone): SmartMoneyQuality {
   const invalid = zone.state === 'INVALIDATED';
-  const reaction = zone.state === 'REACTED' || zone.state === 'REACTION_CONFIRMED';
+  const reaction = zone.state === 'REACTION_CONFIRMED';
   const base = invalid ? 0 : reaction ? 75 : zone.mitigationPct > 0 ? 60 : 45;
   return {
     score: base,
@@ -783,8 +799,10 @@ function roundPrice(value: number): string {
 
 function timeframeMs(timeframe: Timeframe): number {
   if (timeframe === '1m') return 60_000;
+  if (timeframe === '3m') return 180_000;
   if (timeframe === '5m') return 300_000;
   if (timeframe === '15m') return 900_000;
+  if (timeframe === '30m') return 1_800_000;
   if (timeframe === '1h') return 3_600_000;
   return 14_400_000;
 }

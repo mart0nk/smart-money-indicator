@@ -44,6 +44,7 @@ export type {
   SmartMoneyFvgZone,
   SmartMoneyIndicatorOutput,
   SmartMoneyOrderBlockZone,
+  SmartMoneyZone,
   SmartMoneyProof,
   SmartMoneyQuality,
   SmartMoneyReactionEvidence,
@@ -51,5 +52,9 @@ export type {
   SmartMoneyStructure,
   SmartMoneyTimeframeState,
   SmartMoneyZoneRegistry,
+  SmcSourceTimeframe,
+  WatchlistTimeframe,
+  SweepDiagnosticsTimeframe,
+  Phase7ConfirmationTimeframe,
   Timeframe,
 } from './types/index.js';

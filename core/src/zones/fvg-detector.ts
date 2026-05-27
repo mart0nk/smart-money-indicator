@@ -1,14 +1,15 @@
 import type { PrimitiveCandle, PrimitiveFvgZone } from '../primitives/primitives.types.js';
-import type { SmartMoneyEngineConfig, SmartMoneyFvgZone, SmartMoneyProof, Timeframe } from '../types/index.js';
+import type { SmartMoneyEngineConfig, SmartMoneyFvgZone, SmartMoneyProof, SmcSourceTimeframe } from '../types/index.js';
 import { buildStableZoneId } from './zone-id.js';
 
 export function detectSmartMoneyFvgZones(input: {
   symbol: string;
-  timeframe: Timeframe;
+  timeframe: SmcSourceTimeframe;
   candles: Array<{
     symbol: string;
-    timeframe: Timeframe;
+    timeframe: SmcSourceTimeframe;
     openTime: number;
+    closeTime?: number;
     open: number;
     high: number;
     low: number;
@@ -18,21 +19,30 @@ export function detectSmartMoneyFvgZones(input: {
   proof: SmartMoneyProof;
   config: SmartMoneyEngineConfig;
 }): SmartMoneyFvgZone[] {
-  const primitiveCandles = input.candles.map((candle) => ({
-    ...candle,
+  const primitiveCandles: PrimitiveCandle[] = input.candles.map((candle) => ({
+    symbol: candle.symbol,
+    timeframe: candle.timeframe,
     openTime: new Date(candle.openTime),
+    ...(candle.closeTime !== undefined ? { closeTime: new Date(candle.closeTime) } : {}),
+    open: candle.open,
+    high: candle.high,
+    low: candle.low,
+    close: candle.close,
     volume: 0,
+    closed: candle.closed,
   }));
   const primitiveOptions: { minGapBps?: number; impulseRule?: 'CANDLE_COLOR' | 'BODY_ATR' | 'NONE' } = {
     impulseRule: input.config.fvg.impulseRule ?? 'CANDLE_COLOR',
   };
   if (input.config.fvg.minGapBps !== undefined) primitiveOptions.minGapBps = input.config.fvg.minGapBps;
   return detectFvgZones(primitiveCandles, 0, primitiveOptions).map((zone) => ({
+    sourceId: `${input.symbol}:${input.timeframe}:FVG:SOURCE:${zone.detectedAtOpenTime}:none`,
     zoneId: zone.zoneId ?? zone.id,
     type: 'FVG' as const,
     side: zone.direction,
     symbol: input.symbol,
     timeframe: input.timeframe,
+    sourceTimeframe: input.timeframe,
     zoneLow: zone.lowerLevel,
     zoneHigh: zone.upperLevel,
     midpoint: zone.midpoint,
@@ -41,8 +51,9 @@ export function detectSmartMoneyFvgZones(input: {
       candle2Time: primitiveCandles[zone.candleIndexImpulse]!.openTime.getTime(),
       candle3Time: primitiveCandles[zone.candleIndexNext]!.openTime.getTime(),
     },
+    sourceCandleTime: primitiveCandles[zone.candleIndexNext]!.openTime.getTime(),
     createdAt: zone.detectedAtOpenTime,
-    availableFrom: zone.detectedAtOpenTime,
+    availableFrom: primitiveCandles[zone.candleIndexNext]!.closeTime?.getTime() ?? zone.detectedAtOpenTime,
     state: 'DETECTED' as const,
     mitigationPct: 0,
     proof: input.proof,

@@ -1,5 +1,5 @@
 import type { PrimitiveCandle, PrimitiveLiquiditySweepEvidence, PrimitiveSwingPoint } from '../primitives/primitives.types.js';
-import type { LiquiditySweepEvidence, SmartMoneyCandle, SmartMoneyProof, Timeframe } from '../types/index.js';
+import type { LiquiditySweepEvidence, SmartMoneyCandle, SmartMoneyProof, SweepDiagnosticsTimeframe, Timeframe } from '../types/index.js';
 import { detectSmartMoneySwingPoints } from '../structure/swing-detector.js';
 import { isSmartMoneySwingUsableAt } from '../structure/swing-point.types.js';
 
@@ -8,9 +8,11 @@ export function detectSmartMoneyLiquiditySweeps(input: {
   candlesByTimeframe: Partial<Record<Timeframe, SmartMoneyCandle[]>>;
   proof: SmartMoneyProof;
   validForCandles: number;
+  timeframes?: SweepDiagnosticsTimeframe[];
+  minWickExtensionBps?: number;
 }): LiquiditySweepEvidence[] {
   const sweeps: LiquiditySweepEvidence[] = [];
-  for (const timeframe of ['5m', '15m', '1m'] as const) {
+  for (const timeframe of input.timeframes ?? ['15m', '5m', '3m']) {
     const candles = (input.candlesByTimeframe[timeframe] ?? []).map(toPrimitiveCandle);
     const swings = detectSmartMoneySwingPoints(candles, { leftBars: 2, rightBars: 2 });
     for (let i = 0; i < candles.length; i += 1) {
@@ -19,6 +21,10 @@ export function detectSmartMoneyLiquiditySweeps(input: {
       for (const swing of swings) {
         const sweep = detectLiquiditySweep(candle, swing, 0, i);
         if (sweep === null) continue;
+        if (
+          input.minWickExtensionBps !== undefined &&
+          sweep.wickExtensionPct * 10_000 < input.minWickExtensionBps
+        ) continue;
         sweeps.push({
           sweepId: `${input.symbol}:${timeframe}:SWEEP:${sweep.direction}:${sweep.candleOpenTime}:${sweep.referenceLevel}`,
           symbol: input.symbol,
@@ -122,8 +128,8 @@ function toPrimitiveCandle(candle: SmartMoneyCandle): PrimitiveCandle {
   };
 }
 
-function timeframeMs(timeframe: Timeframe): number {
-  if (timeframe === '1m') return 60_000;
+function timeframeMs(timeframe: SweepDiagnosticsTimeframe): number {
+  if (timeframe === '3m') return 180_000;
   if (timeframe === '5m') return 300_000;
   if (timeframe === '15m') return 900_000;
   if (timeframe === '1h') return 3_600_000;

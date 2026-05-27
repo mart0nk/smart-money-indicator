@@ -2,10 +2,15 @@ import type { SmartMoneyEngineConfig } from '../types/index.js';
 
 export const DEFAULT_SMART_MONEY_ENGINE_CONFIG: SmartMoneyEngineConfig = {
   timeframes: ['15m', '5m', '1h', '4h'],
+  sourceZoneTimeframes: ['4h', '1h', '30m', '15m'],
+  sweepTimeframes: ['15m', '5m', '3m'],
+  confirmationTimeframes: ['1m'],
   timeframeRoles: {
     '1m': 'MICRO_CONFIRMATION',
     '5m': 'SWEEP_REACTION',
+    '3m': 'SWEEP_REACTION',
     '15m': 'CORE_AOI',
+    '30m': 'CORE_AOI',
     '1h': 'HTF_CONTEXT',
     '4h': 'HTF_CONTEXT',
   },

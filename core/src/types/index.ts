@@ -1,4 +1,8 @@
-export type Timeframe = '1m' | '5m' | '15m' | '1h' | '4h' | '1d';
+export type Timeframe = '1m' | '3m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d';
+export type SmcSourceTimeframe = '4h' | '1h' | '30m' | '15m';
+export type WatchlistTimeframe = '15m';
+export type SweepDiagnosticsTimeframe = '15m' | '5m' | '3m';
+export type Phase7ConfirmationTimeframe = '1m';
 
 export type SmartMoneyStatus =
   | 'NO_CONTEXT'
@@ -88,15 +92,18 @@ export type SmartMoneyQuality = {
 };
 
 export type SmartMoneyFvgZone = {
+  sourceId: string;
   zoneId: string;
   type: 'FVG';
   side: 'BULLISH' | 'BEARISH';
   symbol: string;
-  timeframe: Timeframe;
+  timeframe: SmcSourceTimeframe;
+  sourceTimeframe: SmcSourceTimeframe;
   zoneLow: number;
   zoneHigh: number;
   midpoint: number;
   sourceCandles: { candle1Time: number; candle2Time: number; candle3Time: number };
+  sourceCandleTime: number;
   createdAt: number;
   availableFrom: number;
   state:
@@ -105,7 +112,7 @@ export type SmartMoneyFvgZone = {
     | 'FIRST_RETURN'
     | 'PARTIALLY_MITIGATED'
     | 'MITIGATED'
-    | 'REACTED'
+    | 'REACTION_CONFIRMED'
     | 'INVALIDATED';
   mitigationPct: number;
   firstReturnAt?: number;
@@ -118,15 +125,18 @@ export type SmartMoneyFvgZone = {
 };
 
 export type SmartMoneyOrderBlockZone = {
+  sourceId: string;
   zoneId: string;
   type: 'ORDER_BLOCK';
   side: 'BULLISH' | 'BEARISH';
   symbol: string;
-  timeframe: Timeframe;
+  timeframe: SmcSourceTimeframe;
+  sourceTimeframe: SmcSourceTimeframe;
   zoneLow: number;
   zoneHigh: number;
   midpoint: number;
   originCandleTime: number;
+  sourceCandleTime: number;
   originBosId?: string;
   displacementEventId?: string;
   createdAt: number;
@@ -171,7 +181,7 @@ export type LiquidityPool = {
 export type LiquiditySweepEvidence = {
   sweepId: string;
   symbol: string;
-  sourceTimeframe: '1m' | '5m' | '15m';
+  sourceTimeframe: SweepDiagnosticsTimeframe;
   side: 'SELL_SIDE' | 'BUY_SIDE';
   referenceLevel: number;
   referenceType:
@@ -207,8 +217,11 @@ export type LiquiditySweepEvidence = {
 
 export type SmartMoneyAOI = {
   aoiId: string;
+  sourceId: string;
+  zoneId: string;
   symbol: string;
-  timeframe: Timeframe;
+  timeframe: SmcSourceTimeframe;
+  sourceTimeframe: SmcSourceTimeframe;
   type: SmartMoneyZoneType;
   side: SmartMoneySide;
   zoneLow: number;
@@ -220,7 +233,7 @@ export type SmartMoneyAOI = {
     | 'FIRST_RETURN'
     | 'PARTIALLY_MITIGATED'
     | 'MITIGATED'
-    | 'REACTED'
+    | 'REACTION_CONFIRMED'
     | 'INVALIDATED';
   mitigationPct: number;
   quality: SmartMoneyQuality;
@@ -431,6 +444,9 @@ export type SmartMoneyTimeframeRole =
 
 export type SmartMoneyEngineConfig = {
   timeframes: Timeframe[];
+  sourceZoneTimeframes: SmcSourceTimeframe[];
+  sweepTimeframes: SweepDiagnosticsTimeframe[];
+  confirmationTimeframes: Phase7ConfirmationTimeframe[];
   timeframeRoles: Partial<Record<Timeframe, SmartMoneyTimeframeRole>>;
   structure: {
     swingPivotLeft: number;

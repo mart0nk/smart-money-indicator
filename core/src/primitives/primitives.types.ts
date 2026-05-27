@@ -1,4 +1,4 @@
-export type PrimitiveTimeframe = '1m' | '5m' | '15m' | '1h' | '4h' | '1d';
+export type PrimitiveTimeframe = '1m' | '3m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d';
 
 export type PrimitiveCandle = {
   symbol: string;
@@ -85,6 +85,7 @@ export type PrimitiveOrderBlock = {
   direction: 'BULLISH' | 'BEARISH';
   candleIndex: number;
   candleOpenTime: number;
+  detectedAtOpenTime?: number;
   high: number;
   low: number;
   open: number;
