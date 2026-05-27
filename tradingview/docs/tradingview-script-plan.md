@@ -2,12 +2,11 @@
 
 TradingView SMI v1 is the third Smart Money Indicator delivery target.
 
-It is a standalone Pine Script visual overlay for the current chart timeframe. It is not an npm package, does not import the TypeScript core, and does not call the SMI API.
+It is a standalone Pine Script visual overlay for the current chart timeframe. It is not an npm package and does not import the TypeScript core.
 
 ## Delivery Targets
 
-- `@trader-agent/smart-money-indicator-core`: full TypeScript backend/package SMI engine.
-- `@trader-agent/smart-money-indicator-api`: optional read-only HTTP layer over core.
+- `core/`: full TypeScript SMI engine package.
 - TradingView Pine Script: standalone current-timeframe visual overlay.
 
 ## v1 Scope
@@ -25,7 +24,7 @@ The Pine script detects and draws:
 - midpoint / CE lines
 - reaction markers
 - invalidated zones
-- basic Context Quality labels
+- primitive visibility labels
 - context-only alerts
 
 ## Exclusions
@@ -36,7 +35,7 @@ Pine v1 does not include:
 - backend/API synchronization
 - TypeScript runtime sharing
 - strategy orders
-- watch, trigger, risk, execution, PnL, portfolio, or agent decision behavior
+- watch, trigger, risk, execution, PnL or portfolio behavior
 
 ## Implementation Sequence
 

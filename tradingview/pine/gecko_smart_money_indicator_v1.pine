@@ -294,23 +294,16 @@ f_updateLiquidityLines()
 [fvgMidpointTouched, fvgInvalidated, fvgReaction] = f_updateZones(fvgZones)
 [obMidpointTouched, obInvalidated, obReaction] = f_updateZones(obZones)
 
-// Context quality marker
-contextScore = 0
-contextScore += structureBias != 0 ? 20 : 0
-contextScore += bullFvg or bearFvg ? 20 : 0
-contextScore += not na(bullObOffset) or not na(bearObOffset) ? 20 : 0
-contextScore += sellSideSweep or buySideSweep ? 20 : 0
-contextScore += fvgReaction or obReaction ? 20 : 0
-
+// Primitive visibility marker; it is not a candidate score or trading decision.
 var label qualityLabel = na
 if confirmedBar and effectiveShowContextBadge and barstate.islast
-    qualityText = contextScore >= 80 ? "PINE_REACTION_CONFIRMED" : contextScore >= 50 ? "PINE_WATCHABLE" : contextScore >= 30 ? "PINE_WAIT_FOR_REACTION" : "PINE_CONTEXT_ONLY"
+    qualityText = fvgReaction or obReaction ? "PINE_REACTION_OBSERVED" : bullFvg or bearFvg or not na(bullObOffset) or not na(bearObOffset) ? "PINE_ZONE_AVAILABLE" : sellSideSweep or buySideSweep ? "PINE_SWEEP_OBSERVED" : "PINE_CONTEXT_ONLY"
     if na(qualityLabel)
-        qualityLabel := label.new(x = bar_index, y = high, text = "Current Context " + str.tostring(contextScore) + " " + qualityText, style = label.style_label_left, color = color.new(color.blue, 60), textcolor = color.white, size = size.small)
+        qualityLabel := label.new(x = bar_index, y = high, text = qualityText, style = label.style_label_left, color = color.new(color.blue, 60), textcolor = color.white, size = size.small)
     else
         label.set_x(qualityLabel, bar_index)
         label.set_y(qualityLabel, high)
-        label.set_text(qualityLabel, "Current Context " + str.tostring(contextScore) + " " + qualityText)
+        label.set_text(qualityLabel, qualityText)
 
 // Context alerts
 alertcondition(bullFvg, "SMI Bullish FVG detected", "SMI Bullish FVG detected on current chart timeframe")

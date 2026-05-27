@@ -6,8 +6,6 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
-    "./types": "./dist/types/index.js",
-    "./config": "./dist/config/index.js",
-    "./diagnostics": "./dist/diagnostics/index.js"
+    "./config": "./dist/v2/smc-config.js"
   }
 }

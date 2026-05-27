@@ -6,7 +6,7 @@ The TypeScript core package implements the full backend/package engine. The Trad
 
 ## Boundary
 
-SMI rules describe context only. They do not create entries, watches, trigger confirmations, risk sizing, orders, execution, positions, portfolio mutations, PnL claims, `AgentDecision`, or `FinalEntryGuard` output.
+SMI rules describe primitive chart observations only. They do not create entries, watches, trigger confirmations, risk sizing, orders, execution, positions, portfolio mutations or PnL claims.
 
 ## Candle Safety
 
@@ -79,12 +79,12 @@ Reaction requires a recent touch. The visual Pine implementation supports a conf
 TradingView Pine uses a narrower visual status set:
 
 - `PINE_CONTEXT_ONLY`
-- `PINE_WATCHABLE`
-- `PINE_WAIT_FOR_REACTION`
-- `PINE_REACTION_CONFIRMED`
+- `PINE_ZONE_AVAILABLE`
+- `PINE_SWEEP_OBSERVED`
+- `PINE_REACTION_OBSERVED`
 - `PINE_INVALIDATED`
 
-Pine does not use `TRIGGER_READY`.
+Pine does not use WATCH, candidate score, `TRIGGER_READY`, risk or execution wording.
 
 ## Alerts
 

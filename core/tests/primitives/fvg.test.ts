@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detectFvgZones, type Candle } from '../../src/index.js';
+import { detectFvgZones, type PrimitiveCandle as Candle } from '../../src/index.js';
 
 function candle(i: number, open: number, high: number, low: number, close: number, closed = true): Candle {
   return {

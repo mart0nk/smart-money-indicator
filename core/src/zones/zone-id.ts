@@ -1,5 +1,3 @@
-import type { Timeframe } from '../types/index.js';
-
 export function normalizeSymbolForZoneId(symbol: string): string {
   return symbol.trim().toUpperCase();
 }
@@ -11,7 +9,7 @@ export function normalizePriceForZoneId(price: number): string {
 
 export function buildStableZoneId(input: {
   symbol: string;
-  timeframe: Timeframe | string;
+  timeframe: string;
   zoneType: 'FVG' | 'ORDER_BLOCK';
   side: 'BULLISH' | 'BEARISH';
   createdAt: number;

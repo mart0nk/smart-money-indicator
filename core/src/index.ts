@@ -1,5 +1,3 @@
-export { DEFAULT_SMART_MONEY_ENGINE_CONFIG, SMART_MONEY_PRIMITIVE_COMPAT_CONFIG, mergeSmartMoneyConfig } from './config/index.js';
-export { createSmartMoneyEngine, evaluateSmartMoneySnapshot } from './engine/smart-money-engine.js';
 export { calculateMitigationPenalty, isMitigationInvalidated } from './aoi/mitigation-scoring.js';
 export { hasSufficientReactionEvidence, sweepStrengthFromEvidence } from './aoi/reaction-evidence-builder.js';
 export { detectLiquiditySweep, scoreLiquiditySweep, sweepStrengthFromScore } from './liquidity/liquidity-sweep-detector.js';
@@ -7,11 +5,25 @@ export { detectSmartMoneyBos, detectSmartMoneyBos as detectBos } from './structu
 export { detectSmartMoneySwingPoints, detectSmartMoneySwingPoints as detectSwingPoints } from './structure/swing-detector.js';
 export { isSmartMoneySwingUsableAt, isSmartMoneySwingUsableAt as isSwingUsableAt } from './structure/swing-point.types.js';
 export { scoreVolumeEvidence } from './quality/volume-evidence.js';
-export { detectFvgZones, detectSmartMoneyFvgZones } from './zones/fvg-detector.js';
-export { detectOrderBlocks, detectSmartMoneyOrderBlockZones } from './zones/order-block-detector.js';
+export { detectFvgZones } from './zones/fvg-detector.js';
+export { detectOrderBlocks } from './zones/order-block-detector.js';
+export { runSmartMoneyEngine } from './v2/smart-money-engine.js';
+export { createSmartMoneyRollingEngine } from './v2/smart-money-rolling-engine.js';
+export {
+  defaultSmartMoneyConfig,
+  defaultSmartMoneyRollingConfig,
+  resolveSmartMoneyConfig,
+  resolveRollingConfig,
+} from './v2/smc-config.js';
+export {
+  buildZoneId,
+  buildSourceId,
+  buildSweepId,
+  buildFactId,
+} from './v2/smc-ids.js';
 export type {
   PrimitiveBosEvent as BosEvent,
-  PrimitiveCandle as Candle,
+  PrimitiveCandle,
   PrimitiveFvgZone as FvgZone,
   PrimitiveLiquiditySweepDirection,
   PrimitiveLiquiditySweepEvidence,
@@ -28,33 +40,35 @@ export type {
   PrimitiveVolumeEvidence as VolumeEvidence,
 } from './primitives/primitives.types.js';
 export type {
-  EvaluateSmartMoneyIncrementalInput,
-  EvaluateSmartMoneyInput,
-  EvaluateSmartMoneyResult,
-  LiquidityPool,
-  LiquiditySweepEvidence,
-  SmartMoneyAlert,
-  SmartMoneyAOI,
-  SmartMoneyCandle,
-  SmartMoneyDiagnosticsReport,
-  SmartMoneyEngine,
-  SmartMoneyEngineConfig,
-  SmartMoneyEngineState,
-  SmartMoneyEvent,
-  SmartMoneyFvgZone,
-  SmartMoneyIndicatorOutput,
-  SmartMoneyOrderBlockZone,
-  SmartMoneyZone,
-  SmartMoneyProof,
-  SmartMoneyQuality,
-  SmartMoneyReactionEvidence,
-  SmartMoneyStatus,
-  SmartMoneyStructure,
-  SmartMoneyTimeframeState,
-  SmartMoneyZoneRegistry,
-  SmcSourceTimeframe,
-  WatchlistTimeframe,
-  SweepDiagnosticsTimeframe,
-  Phase7ConfirmationTimeframe,
+  Candle,
+  Candle as CanonicalSmcCandle,
   Timeframe,
-} from './types/index.js';
+  SmcSourceTimeframe,
+  SweepTimeframe,
+  SmcInputTimeframe,
+  SmcSide,
+  SmcSweepSide,
+  TemporalProvenance,
+  LiquidityReferenceLevel,
+  SmcAoiState,
+  FvgAoi,
+  OrderBlockAoi,
+  LiquiditySweepEvidence,
+  LiquiditySweepEvidence as CanonicalLiquiditySweepEvidence,
+  SmcAoiFactType,
+  SmcAoiFact,
+  SmcLifecycleEventType,
+  SmcLifecycleEvent,
+  SmcEngineViolationSeverity,
+  SmcEngineViolationCode,
+  SmcEngineViolation,
+  SmartMoneyConfig,
+  SmartMoneyEngineInput,
+  SmartMoneyEngineOutput,
+  SmartMoneyRollingConfig,
+  SmartMoneyRollingUpdate,
+  SmartMoneySnapshotInput,
+  SmartMoneyBufferDiagnostics,
+  SmartMoneyResetScope,
+  SmartMoneyRollingEngine,
+} from './v2/smc-core.types.js';

@@ -1,12 +1,12 @@
-# SMI Core Contract
+# SMI Core Contract v2
 
-The core package owns SMC computation only. It has no HTTP, database, exchange, trader-agent runtime, risk, execution, position or portfolio dependencies.
+The core package owns deterministic SMC/AOI computation, canonical facts/events/violations, stable IDs, validation and an optional in-memory rolling closed-candle buffer.
 
-Core supports two modes:
+Public entrypoints:
 
-- `STATELESS_REBUILD`: rebuild a snapshot from candle history.
-- `INCREMENTAL`: accept `previousState` plus new closed candles and return `nextState`.
+- `runSmartMoneyEngine(input)`: stateless calculation from explicit visible history.
+- `createSmartMoneyRollingEngine(config)`: stateful candle-buffer wrapper that calls the stateless calculation.
 
-The core does not decide where state is stored. Callers may persist `SmartMoneyEngineState` in memory, Redis, Postgres, SQLite, a file snapshot, trader-agent storage, or a standalone SMI service store.
+The rolling engine stores candles and buffer diagnostics only. It does not store WATCHLIST, setup-model, trigger, risk, alert, execution, replay-runner, provider or persistent database state.
 
-Every output includes proof metadata with cursor, closed-candle and lookahead safety fields.
+The core has no HTTP, exchange, persistence or trading-decision dependencies.
