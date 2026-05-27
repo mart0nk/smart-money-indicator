@@ -1,11 +1,11 @@
 # Smart Money Indicator
 
-Standalone Smart Money Indicator packages for Trader Agent.
+Deterministic SMC/AOI primitives and optional closed-candle rolling buffers for Trader Agent.
 
 ## Packages
 
-- `@trader-agent/smart-money-indicator-core`: pure TypeScript SMC/AOI engine.
-- `@trader-agent/smart-money-indicator-api`: optional read-only Express router over the core package.
+- `@trader-agent/smart-money-indicator-core`: deterministic TypeScript SMC/AOI engine with stateless and in-memory rolling entrypoints.
+- `tradingview/`: visualization-only Pine artifact.
 
 ## Commands
 
@@ -18,6 +18,4 @@ npm run build
 
 ## Boundaries
 
-The core package has no HTTP, database, exchange, execution, position, portfolio, or Trader Agent runtime dependencies.
-
-The API package exposes read-only `/smi/v1/*` and `/debug/smi/v1/*` routes. It does not create orders, watches, triggers, risk decisions, positions, portfolio mutations, or agent decisions.
+The package may retain closed candles in memory through `createSmartMoneyRollingEngine()`. It has no HTTP, database, exchange, WATCHLIST, trigger, risk, alert, execution, position, portfolio, or Trader Agent orchestration dependencies.

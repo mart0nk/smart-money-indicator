@@ -1,6 +1,6 @@
 # SMI Migration Status
 
-`src/smc` and `/debug/smc/*` have been removed. Smart Money Indicator core is the source of truth.
+`src/smc` and the SMI HTTP package have been removed. Smart Money Indicator core is the source of truth.
 
 ## Guard Command
 
@@ -11,14 +11,19 @@ npm run check:no-legacy-smc-imports
 ## Current Runtime Surface
 
 - `@trader-agent/smart-money-indicator-core`
-- `@trader-agent/smart-money-indicator-api`
 - `src/smart-money-indicator/*` for Trader Agent runtime adapters only
 
 ## Removed Surface
 
 - `src/smc/*`
 - `@trader-agent/smart-money-indicator-core/legacy`
-- `/debug/smc/*`
+- `@trader-agent/smart-money-indicator-api`
+
+## v2 Surface
+
+- `runSmartMoneyEngine()` for deterministic one-shot calculation.
+- `createSmartMoneyRollingEngine()` for in-memory closed-candle buffering and the same canonical output.
+- Canonical facts carry `sourceTime`, `availableFrom` and `observedAt`; lifecycle events carry `eventTime` and `observedAt`.
 
 ## Preserved Logic
 

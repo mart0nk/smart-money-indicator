@@ -1,16 +1,11 @@
 # Trader-Agent Integration
 
-Trader-agent can use SMI in two v1 modes:
+Trader Agent imports `@trader-agent/smart-money-indicator-core` through its `SmartMoneyProvider` adapter.
 
-1. Package-only mode: import `@trader-agent/smart-money-indicator-core` and call the engine directly.
-2. Embedded API mode: mount the router from `@trader-agent/smart-money-indicator-api`.
+- Live/replay orchestration sends newly closed candles to `createSmartMoneyRollingEngine()`.
+- Trader Agent generates visible `LiquidityReferenceLevel[]` and passes them to SMI for sweep evaluation.
+- Phase 5 consumes canonical SMI AOIs/facts; Phase 6 maps those facts to setup models.
 
-Trader-agent provides:
+Exchange ingestion, resampling, persistence, replay cursors, reference-level generation, market context, WATCHLIST, trigger, risk, alerts, execution, `AgentDecision` and `FinalEntryGuard` remain outside SMI.
 
-- a candle provider
-- optional state store
-- optional config
-
-Trader-agent does not own or manually implement `/smi/v1/*` endpoints. Those endpoints live in the SMI API package.
-
-WATCH, TRIGGER, Risk, Execution, `AgentDecision` and `FinalEntryGuard` remain outside SMI.
+SMI exposes no Express router or state-store/candle-provider API.

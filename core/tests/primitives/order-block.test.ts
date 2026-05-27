@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   detectOrderBlocks,
-  type Candle,
+  type PrimitiveCandle as Candle,
   type SwingPoint,
 } from '../../src/index.js';
 
