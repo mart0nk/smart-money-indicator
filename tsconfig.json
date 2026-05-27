@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "paths": {
+      "@trader-agent/smart-money-indicator-core": ["./core/src/index.ts"],
+      "@trader-agent/smart-money-indicator-api": ["./api/src/index.ts"]
+    }
+  },
+  "include": ["core/src", "core/tests", "api/src", "api/tests"],
+  "exclude": ["node_modules", "core/dist", "api/dist"]
+}
