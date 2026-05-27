@@ -2,9 +2,9 @@
 
 TradingView Pine Script is a chart runtime. Gecko SMI Pine v1 is intentionally current-timeframe-only and standalone.
 
-## No API Dependency
+## Standalone Input
 
-The Pine script does not call SMI backend endpoints and does not depend on Trader Agent services. It uses only chart OHLCV data, `time`, and `bar_index`.
+The Pine script uses only chart OHLCV data, `time`, and `bar_index`. It does not call external endpoints or services.
 
 ## No MTF In v1
 

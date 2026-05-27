@@ -6,7 +6,7 @@ It is a standalone Pine Script visual overlay for the current chart timeframe. I
 
 ## Delivery Targets
 
-- `@trader-agent/smart-money-indicator-core`: full TypeScript backend/package SMI engine.
+- `core/`: full TypeScript SMI engine package.
 - TradingView Pine Script: standalone current-timeframe visual overlay.
 
 ## v1 Scope
@@ -35,7 +35,7 @@ Pine v1 does not include:
 - backend/API synchronization
 - TypeScript runtime sharing
 - strategy orders
-- watch, trigger, risk, execution, PnL, portfolio, or agent decision behavior
+- watch, trigger, risk, execution, PnL or portfolio behavior
 
 ## Implementation Sequence
 

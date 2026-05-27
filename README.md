@@ -1,10 +1,10 @@
 # Smart Money Indicator
 
-Deterministic SMC/AOI primitives and optional closed-candle rolling buffers for Trader Agent.
+Deterministic SMC/AOI primitives and optional closed-candle rolling buffers.
 
 ## Packages
 
-- `@trader-agent/smart-money-indicator-core`: deterministic TypeScript SMC/AOI engine with stateless and in-memory rolling entrypoints.
+- `core/`: deterministic TypeScript SMC/AOI engine with stateless and in-memory rolling entrypoints.
 - `tradingview/`: visualization-only Pine artifact.
 
 ## Commands
@@ -18,4 +18,4 @@ npm run build
 
 ## Boundaries
 
-The package may retain closed candles in memory through `createSmartMoneyRollingEngine()`. It has no HTTP, database, exchange, WATCHLIST, trigger, risk, alert, execution, position, portfolio, or Trader Agent orchestration dependencies.
+The package may retain closed candles in memory through `createSmartMoneyRollingEngine()`. It has no HTTP, database, exchange, watch, trigger, risk, alert, execution, position, portfolio, or external orchestration dependencies.

@@ -6,7 +6,7 @@ The TypeScript core package implements the full backend/package engine. The Trad
 
 ## Boundary
 
-SMI rules describe context only. They do not create entries, watches, trigger confirmations, risk sizing, orders, execution, positions, portfolio mutations, PnL claims, `AgentDecision`, or `FinalEntryGuard` output.
+SMI rules describe primitive chart observations only. They do not create entries, watches, trigger confirmations, risk sizing, orders, execution, positions, portfolio mutations or PnL claims.
 
 ## Candle Safety
 

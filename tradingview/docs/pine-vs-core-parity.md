@@ -23,4 +23,4 @@ The Pine output is not guaranteed to match TypeScript output byte-for-byte becau
 
 Pine output must not be used as backend execution authority.
 
-Trader Agent runtime decisions remain outside the Pine script and outside SMI context generation.
+Trading-runtime decisions remain outside the Pine script and outside SMI context generation.
