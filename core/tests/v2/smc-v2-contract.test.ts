@@ -67,7 +67,7 @@ describe('SMI core v2 contract', () => {
       cursorMs: history.at(-1)!.closeTime!,
       candlesByTimeframe: { '15m': history },
     });
-    expect(JSON.stringify(output)).not.toMatch(/watch|trigger|risk|alert|execution|model/i);
+    expect(JSON.stringify(output)).not.toMatch(/watch|trigger|alert|execution|model/i);
   });
 
   it('emits canonical FVG facts with temporal provenance and reaction evidence', () => {
@@ -90,8 +90,23 @@ describe('SMI core v2 contract', () => {
       state: 'REACTION_CONFIRMED',
       sourceTimeframe: '15m',
     });
+    expect(fvg).toMatchObject({
+      lifecycle: {
+        isFresh: false,
+        touchCount: 1,
+        firstTouchedAt: history[3]!.closeTime,
+        lastTouchedAt: history[3]!.closeTime,
+      },
+      quality: {
+        policyVersion: 'fvg-quality-v1',
+        verdict: 'STRONG',
+        flags: expect.arrayContaining(['CREATED_WITH_DISPLACEMENT', 'CREATED_AFTER_BOS']),
+      },
+    });
     expect(output.facts.map((fact) => fact.factType)).toEqual(expect.arrayContaining([
       'FVG_ZONE_AVAILABLE',
+      'FVG_CREATED_WITH_DISPLACEMENT',
+      'FVG_CREATED_AFTER_BOS',
       'PRICE_RETURNED_TO_FVG',
       'FVG_FIRST_RETURN_CONFIRMED',
       'FVG_REACTION_CONFIRMED',
@@ -155,5 +170,81 @@ describe('SMI core v2 contract', () => {
     expect(output.sweeps).toHaveLength(1);
     expect(output.sweeps[0]!.side).toBe('SELL_SIDE_SWEEP');
     expect(output.facts.some((fact) => fact.factType === 'SELL_SIDE_SWEEP_DETECTED')).toBe(true);
+  });
+
+  it('does not create FVG without a real three-candle gap, even with a large middle candle', () => {
+    const history = [
+      candle('15m', 0, FIFTEEN_MINUTES, 98, 100, 97, 99),
+      candle('15m', 1, FIFTEEN_MINUTES, 99, 130, 99, 128),
+      candle('15m', 2, FIFTEEN_MINUTES, 128, 129, 99.5, 120),
+    ];
+    const output = runSmartMoneyEngine({
+      symbol: 'BTCUSDT',
+      cursorMs: history.at(-1)!.closeTime!,
+      candlesByTimeframe: { '15m': history },
+    });
+
+    expect(output.aois.filter((aoi) => aoi.aoiType === 'FVG')).toHaveLength(0);
+  });
+
+  it('keeps a weak FVG as an AOI instead of dropping it by quality threshold', () => {
+    const history = [
+      candle('15m', 0, FIFTEEN_MINUTES, 100, 100, 99, 99.5),
+      candle('15m', 1, FIFTEEN_MINUTES, 99.5, 101, 99, 100),
+      candle('15m', 2, FIFTEEN_MINUTES, 100.01, 101.5, 100.005, 101),
+    ];
+    const output = runSmartMoneyEngine({
+      symbol: 'BTCUSDT',
+      cursorMs: history.at(-1)!.closeTime!,
+      candlesByTimeframe: { '15m': history },
+      config: {
+        fvg: {
+          minGapBps: 10,
+          quality: {
+            atrPeriod: 3,
+            minGapBpsForAcceptable: 10,
+            displacement: {
+              minBodyToRangeRatio: 0.6,
+              minRangeAtrMultiple: 1.2,
+              bullishMinCloseLocationPct: 0.7,
+              bearishMaxCloseLocationPct: 0.3,
+            },
+            structure: { maxCandlesAfterBos: 3 },
+            barriers: { maxDistancePct: 0.25 },
+          },
+        },
+      },
+    });
+    const fvg = output.aois.find((aoi) => aoi.aoiType === 'FVG');
+
+    expect(fvg).toBeDefined();
+    expect(fvg!.quality.verdict).toBe('WEAK');
+    expect(fvg!.quality.flags).toContain('TOO_SMALL');
+    expect(output.facts.map((fact) => fact.factType)).toEqual(expect.arrayContaining(['FVG_TOO_SMALL', 'FVG_LOW_QUALITY']));
+    expect(output.violations.map((item) => item.code)).toContain('FVG_TOO_SMALL');
+  });
+
+  it('marks FVG near a visible barrier as trap risk metadata only', () => {
+    const history = fvgCandles().slice(0, 3);
+    const reference: LiquidityReferenceLevel = {
+      referenceId: 'resistance:1',
+      type: 'SUPPORT_RESISTANCE',
+      price: 104.1,
+      side: 'BUY_SIDE_LIQUIDITY',
+      sourceTimeframe: '15m',
+      detectedAt: history[1]!.closeTime!,
+    };
+    const output = runSmartMoneyEngine({
+      symbol: 'BTCUSDT',
+      cursorMs: history.at(-1)!.closeTime!,
+      candlesByTimeframe: { '15m': history },
+      referenceLevels: [reference],
+    });
+    const fvg = output.aois.find((aoi) => aoi.aoiType === 'FVG');
+
+    expect(fvg).toBeDefined();
+    expect(fvg!.quality.verdict).toBe('TRAP_RISK');
+    expect(fvg!.quality.nearbyBarriers[0]).toMatchObject({ referenceId: 'resistance:1', direction: 'ABOVE' });
+    expect(output.facts.map((fact) => fact.factType)).toEqual(expect.arrayContaining(['FVG_NEAR_MAJOR_BARRIER', 'FVG_TRAP_RISK']));
   });
 });

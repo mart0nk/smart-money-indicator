@@ -7,7 +7,7 @@ export function detectFvgZones(
   options?: { minGapBps?: number; impulseRule?: 'CANDLE_COLOR' | 'BODY_ATR' | 'NONE' }
 ): PrimitiveFvgZone[] {
   const results: PrimitiveFvgZone[] = [];
-  const impulseRule = options?.impulseRule ?? 'CANDLE_COLOR';
+  const impulseRule = options?.impulseRule ?? 'NONE';
 
   for (let i = 0; i <= candles.length - 3; i += 1) {
     const prev = candles[i];

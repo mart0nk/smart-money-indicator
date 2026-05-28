@@ -8,6 +8,22 @@ export const defaultSmartMoneyConfig: SmartMoneyConfig = {
   strictMode: true,
   fvg: {
     minGapBps: 1,
+    quality: {
+      atrPeriod: 14,
+      minGapBpsForAcceptable: 1,
+      displacement: {
+        minBodyToRangeRatio: 0.6,
+        minRangeAtrMultiple: 1.2,
+        bullishMinCloseLocationPct: 0.7,
+        bearishMaxCloseLocationPct: 0.3,
+      },
+      structure: {
+        maxCandlesAfterBos: 3,
+      },
+      barriers: {
+        maxDistancePct: 0.25,
+      },
+    },
   },
   orderBlock: {
     requireBos: true,
@@ -42,7 +58,26 @@ export function resolveSmartMoneyConfig(input?: Partial<SmartMoneyConfig>): Smar
   return {
     ...defaultSmartMoneyConfig,
     ...input,
-    fvg: { ...defaultSmartMoneyConfig.fvg, ...input?.fvg },
+    fvg: {
+      ...defaultSmartMoneyConfig.fvg,
+      ...input?.fvg,
+      quality: {
+        ...defaultSmartMoneyConfig.fvg.quality,
+        ...input?.fvg?.quality,
+        displacement: {
+          ...defaultSmartMoneyConfig.fvg.quality.displacement,
+          ...input?.fvg?.quality?.displacement,
+        },
+        structure: {
+          ...defaultSmartMoneyConfig.fvg.quality.structure,
+          ...input?.fvg?.quality?.structure,
+        },
+        barriers: {
+          ...defaultSmartMoneyConfig.fvg.quality.barriers,
+          ...input?.fvg?.quality?.barriers,
+        },
+      },
+    },
     orderBlock: { ...defaultSmartMoneyConfig.orderBlock, ...input?.orderBlock },
     sweeps: { ...defaultSmartMoneyConfig.sweeps, ...input?.sweeps },
   };
