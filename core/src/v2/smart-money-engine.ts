@@ -46,8 +46,12 @@ export function runSmartMoneyEngine(input: SmartMoneyEngineInput): SmartMoneyEng
   const config = resolveSmartMoneyConfig(input.config);
   const violations: SmcEngineViolation[] = validateConfig(config, input);
   const candles = validateAndNormalizeCandles(input, violations);
+  if (config.strictMode && hasFatalViolations(violations)) {
+    return emptyOutput(input, config, violations);
+  }
   const observedAt = input.cursorMs;
-  const aois = config.sourceZoneTimeframes.flatMap((timeframe) => {
+  const sourceTimeframes = validSourceTimeframes(config);
+  const aois = sourceTimeframes.flatMap((timeframe) => {
     const history = candles[timeframe] ?? [];
     return [
       ...detectFvgAois(input.symbol, timeframe, history, observedAt, config, violations, input.referenceLevels ?? []),
@@ -65,8 +69,9 @@ export function runSmartMoneyEngine(input: SmartMoneyEngineInput): SmartMoneyEng
   violations.sort(compareViolations);
   return {
     contractVersion: 'smi-core-v2',
-    snapshotId: buildSnapshotId(input, config.version),
+    snapshotId: buildSnapshotId(input, config),
     configVersion: config.version,
+    valid: !hasFatalViolations(violations),
     symbol: input.symbol.toUpperCase(),
     cursorMs: input.cursorMs,
     aois,
@@ -77,11 +82,46 @@ export function runSmartMoneyEngine(input: SmartMoneyEngineInput): SmartMoneyEng
   };
 }
 
+function emptyOutput(
+  input: SmartMoneyEngineInput,
+  config: SmartMoneyConfig,
+  violations: SmcEngineViolation[],
+): SmartMoneyEngineOutput {
+  const sortedViolations = [...violations].sort(compareViolations);
+  return {
+    contractVersion: 'smi-core-v2',
+    snapshotId: buildSnapshotId(input, config),
+    configVersion: config.version,
+    valid: false,
+    symbol: input.symbol.toUpperCase(),
+    cursorMs: input.cursorMs,
+    aois: [],
+    sweeps: [],
+    facts: [],
+    events: [],
+    violations: sortedViolations,
+  };
+}
+
+function hasFatalViolations(violations: SmcEngineViolation[]): boolean {
+  return violations.some((violation) => violation.severity === 'FATAL');
+}
+
+function validSourceTimeframes(config: SmartMoneyConfig): SmcSourceTimeframe[] {
+  return (config.sourceZoneTimeframes as string[]).filter((timeframe): timeframe is SmcSourceTimeframe =>
+    timeframe in SOURCE_TIMEFRAME_RANK &&
+    !config.forbiddenSourceZoneTimeframes.includes(timeframe as '5m' | '3m' | '1m'));
+}
+
 function validateConfig(config: SmartMoneyConfig, input: SmartMoneyEngineInput): SmcEngineViolation[] {
   const violations: SmcEngineViolation[] = [];
   for (const timeframe of config.sourceZoneTimeframes as string[]) {
     if (config.forbiddenSourceZoneTimeframes.includes(timeframe as '5m' | '3m' | '1m')) {
       violations.push(violation(input, 'FORBIDDEN_SOURCE_TIMEFRAME', 'FATAL', `Source zone timeframe ${timeframe} is forbidden.`, timeframe as Timeframe));
+      continue;
+    }
+    if (!(timeframe in SOURCE_TIMEFRAME_RANK)) {
+      violations.push(violation(input, 'INVALID_CONFIG', 'FATAL', `Source zone timeframe ${timeframe} is unsupported.`, timeframe as Timeframe));
     }
   }
   if (
@@ -144,6 +184,7 @@ function candleRejection(candle: Candle, timeframe: SmcInputTimeframe, cursorMs:
   if (candle.closeTime === undefined || !Number.isFinite(candle.openTime) || !Number.isFinite(candle.closeTime) ||
       candle.openTime >= candle.closeTime || candle.closeTime - candle.openTime !== INTERVAL_MS[timeframe] ||
       ![candle.open, candle.high, candle.low, candle.close, candle.volume].every(Number.isFinite) ||
+      ![candle.open, candle.high, candle.low, candle.close].every((price) => price > 0) ||
       candle.high < Math.max(candle.open, candle.close) || candle.low > Math.min(candle.open, candle.close) ||
       candle.volume < 0) {
     return { code: 'MALFORMED_CANDLE_REJECTED', severity: 'FATAL', message: `Malformed ${timeframe} candle rejected.` };
@@ -391,14 +432,20 @@ function detectOrderBlockAois(
   config: SmartMoneyConfig,
 ): OrderBlockAoi[] {
   const aois: OrderBlockAoi[] = [];
-  if (!config.orderBlock.requireBos || !config.orderBlock.requireDisplacement) return aois;
   for (let index = 1; index < candles.length; index += 1) {
     const confirmation = candles[index]!;
     const previous = candles[index - 1]!;
-    const bullish = confirmation.close > confirmation.open && confirmation.close > previous.high;
-    const bearish = confirmation.close < confirmation.open && confirmation.close < previous.low;
+    const bullishDisplacement = confirmation.close > confirmation.open;
+    const bearishDisplacement = confirmation.close < confirmation.open;
+    const bullishBos = config.orderBlock.requireConfirmedBos ? confirmation.close > previous.high : confirmation.high > previous.high;
+    const bearishBos = config.orderBlock.requireConfirmedBos ? confirmation.close < previous.low : confirmation.low < previous.low;
+    const bullish = (!config.orderBlock.requireDisplacement || bullishDisplacement) &&
+      (!config.orderBlock.requireBos || bullishBos);
+    const bearish = (!config.orderBlock.requireDisplacement || bearishDisplacement) &&
+      (!config.orderBlock.requireBos || bearishBos);
     if (!bullish && !bearish) continue;
-    const side: SmcSide = bullish ? 'BULLISH' : 'BEARISH';
+    const side = chooseOrderBlockSide({ bullish, bearish, bullishDisplacement, bearishDisplacement, bullishBos, bearishBos });
+    if (side === undefined) continue;
     let origin: Candle | undefined;
     for (let originIndex = index - 1; originIndex >= Math.max(0, index - 5); originIndex -= 1) {
       const candidate = candles[originIndex]!;
@@ -436,6 +483,23 @@ function detectOrderBlockAois(
     aois.push(applyLifecycle(base, candles));
   }
   return dedupeBy(aois, (aoi) => aoi.zoneId);
+}
+
+function chooseOrderBlockSide(input: {
+  bullish: boolean;
+  bearish: boolean;
+  bullishDisplacement: boolean;
+  bearishDisplacement: boolean;
+  bullishBos: boolean;
+  bearishBos: boolean;
+}): SmcSide | undefined {
+  if (input.bullish && !input.bearish) return 'BULLISH';
+  if (input.bearish && !input.bullish) return 'BEARISH';
+  if (input.bullishDisplacement && !input.bearishDisplacement) return 'BULLISH';
+  if (input.bearishDisplacement && !input.bullishDisplacement) return 'BEARISH';
+  if (input.bullishBos && !input.bearishBos) return 'BULLISH';
+  if (input.bearishBos && !input.bullishBos) return 'BEARISH';
+  return undefined;
 }
 
 function applyLifecycle<T extends FvgAoi | OrderBlockAoi>(aoi: T, candles: Candle[]): T {
@@ -503,7 +567,7 @@ function appendAoiFacts(aoi: FvgAoi | OrderBlockAoi, facts: SmcAoiFact[], events
     appendFvgQualityFacts(aoi, availableFact, facts);
   }
   if (aoi.state === 'RETURNED' || aoi.state === 'MITIGATED' || aoi.state === 'REACTION_CONFIRMED') {
-    const returnedType = aoi.aoiType === 'FVG' ? 'PRICE_RETURNED_TO_FVG' : 'PRICE_RETURNED_TO_ORDER_BLOCK';
+    const returnedType = aoi.aoiType === 'FVG' ? 'IMBALANCE_PULLBACK_LOCATION_CONFIRMED' : 'PULLBACK_INTO_ORDER_BLOCK';
     const returnedAt = aoi.returnedAt ?? aoi.observedAt;
     const returned = zoneFact(aoi, returnedType, returnedAt, [availableFact.factId]);
     facts.push(returned);
@@ -651,8 +715,15 @@ function appendSweepRejection(
   const code = type;
   violations.push(violation(input, code, 'INFO', `${type} on ${timeframe}.`, timeframe, candle.closeTime));
   const availableFrom = candle.closeTime!;
+  const rejectionId = [
+    input.symbol.toUpperCase(),
+    timeframe,
+    type,
+    reference.referenceId,
+    availableFrom,
+  ].join(':');
   facts.push({
-    factId: buildFactId({ factType: type, sweepId: reference.referenceId, availableFrom }),
+    factId: buildFactId({ factType: type, sweepId: rejectionId, availableFrom }),
     factType: type,
     symbol: input.symbol.toUpperCase(),
     sourceTimeframe: timeframe,

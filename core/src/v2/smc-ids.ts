@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
-import type { SmartMoneyEngineInput } from './smc-core.types.js';
+import type { SmartMoneyConfig, SmartMoneyEngineInput } from './smc-core.types.js';
 
-function numberId(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toString();
+export function normalizeIdNumber(value: number): string {
+  if (!Number.isFinite(value)) return 'NaN';
+  return Number(value.toFixed(8)).toString();
 }
 
 export function buildZoneId(input: {
@@ -20,8 +21,8 @@ export function buildZoneId(input: {
     input.aoiType,
     input.side,
     input.sourceCandleTime,
-    numberId(input.aoiLow),
-    numberId(input.aoiHigh),
+    normalizeIdNumber(input.aoiLow),
+    normalizeIdNumber(input.aoiHigh),
   ].join(':');
 }
 
@@ -61,13 +62,43 @@ export function buildFactId(input: {
   return [input.factType, input.zoneId ?? input.sweepId ?? 'unscoped', input.availableFrom].join(':');
 }
 
-export function buildSnapshotId(input: SmartMoneyEngineInput, configVersion: string): string {
-  const candleTimes = Object.entries(input.candlesByTimeframe)
+export function buildSnapshotId(input: SmartMoneyEngineInput, config: SmartMoneyConfig): string {
+  const candles = Object.entries(input.candlesByTimeframe)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([timeframe, candles]) => [timeframe, (candles ?? []).map((candle) => candle.closeTime ?? candle.openTime)]);
-  const references = (input.referenceLevels ?? []).map((level) => level.referenceId).sort();
+    .map(([timeframe, timeframeCandles]) => [
+      timeframe,
+      (timeframeCandles ?? [])
+        .map((candle) => ({
+          timeframe: candle.timeframe,
+          openTime: candle.openTime,
+          closeTime: candle.closeTime,
+          open: candle.open,
+          high: candle.high,
+          low: candle.low,
+          close: candle.close,
+          volume: candle.volume,
+          closed: candle.closed,
+        }))
+        .sort((a, b) => (a.closeTime ?? a.openTime) - (b.closeTime ?? b.openTime)),
+    ]);
+  const references = (input.referenceLevels ?? [])
+    .map((level) => ({
+      referenceId: level.referenceId,
+      type: level.type,
+      price: level.price,
+      side: level.side,
+      sourceTimeframe: level.sourceTimeframe,
+      detectedAt: level.detectedAt,
+    }))
+    .sort((a, b) => a.referenceId.localeCompare(b.referenceId));
   return createHash('sha256')
-    .update(JSON.stringify([input.symbol.toUpperCase(), input.cursorMs, configVersion, candleTimes, references]))
+    .update(JSON.stringify({
+      symbol: input.symbol.toUpperCase(),
+      cursorMs: input.cursorMs,
+      config,
+      candles,
+      references,
+    }))
     .digest('hex')
     .slice(0, 24);
 }

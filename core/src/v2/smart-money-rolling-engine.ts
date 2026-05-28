@@ -119,13 +119,15 @@ function evaluateFromBuffer(
 
 function withUpdateViolations(output: SmartMoneyEngineOutput, additional: SmcEngineViolation[]): SmartMoneyEngineOutput {
   const ranks: Record<SmcEngineViolation['severity'], number> = { FATAL: 0, ERROR: 1, WARN: 2, INFO: 3 };
+  const violations = [...output.violations, ...additional].sort((a, b) =>
+    ranks[a.severity] - ranks[b.severity] ||
+    a.code.localeCompare(b.code) ||
+    (a.timeframe ?? '').localeCompare(b.timeframe ?? '') ||
+    (a.candleTime ?? 0) - (b.candleTime ?? 0));
   return {
     ...output,
-    violations: [...output.violations, ...additional].sort((a, b) =>
-      ranks[a.severity] - ranks[b.severity] ||
-      a.code.localeCompare(b.code) ||
-      (a.timeframe ?? '').localeCompare(b.timeframe ?? '') ||
-      (a.candleTime ?? 0) - (b.candleTime ?? 0)),
+    valid: output.valid && !additional.some((violation) => violation.severity === 'FATAL'),
+    violations,
   };
 }
 

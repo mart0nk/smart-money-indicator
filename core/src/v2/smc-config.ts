@@ -1,4 +1,4 @@
-import type { SmartMoneyConfig, SmartMoneyRollingConfig } from './smc-core.types.js';
+import type { SmartMoneyConfig, SmartMoneyConfigInput, SmartMoneyRollingConfig } from './smc-core.types.js';
 
 export const defaultSmartMoneyConfig: SmartMoneyConfig = {
   version: 'smi-config-v2',
@@ -54,7 +54,7 @@ export const defaultSmartMoneyRollingConfig: SmartMoneyRollingConfig = {
   },
 };
 
-export function resolveSmartMoneyConfig(input?: Partial<SmartMoneyConfig>): SmartMoneyConfig {
+export function resolveSmartMoneyConfig(input?: SmartMoneyConfigInput): SmartMoneyConfig {
   return {
     ...defaultSmartMoneyConfig,
     ...input,
