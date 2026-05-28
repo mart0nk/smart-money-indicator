@@ -52,6 +52,66 @@ export type SmcAoiState =
   | 'REACTION_CONFIRMED'
   | 'INVALIDATED';
 
+export type FvgQualityVerdict = 'STRONG' | 'ACCEPTABLE' | 'WEAK' | 'TRAP_RISK';
+
+export type FvgQualityFlag =
+  | 'CREATED_WITH_DISPLACEMENT'
+  | 'CREATED_WITHOUT_DISPLACEMENT'
+  | 'CREATED_AFTER_BOS'
+  | 'NO_BOS_CONTEXT'
+  | 'TOO_SMALL'
+  | 'NEAR_MAJOR_BARRIER';
+
+export type FvgDisplacementMetrics = {
+  bodySize: number;
+  rangeSize: number;
+  bodyToRangeRatio: number;
+  rangeAtrMultiple?: number;
+  closeLocationPct: number;
+  direction: SmcSide;
+  passed: boolean;
+};
+
+export type FvgSizeMetrics = {
+  gapSizeAbs: number;
+  gapSizePct: number;
+  gapBps: number;
+  gapAtrMultiple?: number;
+  passedMinSize: boolean;
+};
+
+export type FvgStructureContext = {
+  formedAfterBos: boolean;
+  relatedStructureBreakId?: string;
+  candlesAfterBreak?: number;
+};
+
+export type FvgNearbyBarrier = {
+  referenceId: string;
+  type: LiquidityReferenceLevel['type'];
+  price: number;
+  distancePct: number;
+  direction: 'ABOVE' | 'BELOW';
+};
+
+export type FvgQualityAssessment = {
+  policyVersion: 'fvg-quality-v1';
+  verdict: FvgQualityVerdict;
+  displacement: FvgDisplacementMetrics;
+  size: FvgSizeMetrics;
+  structure: FvgStructureContext;
+  nearbyBarriers: FvgNearbyBarrier[];
+  flags: FvgQualityFlag[];
+};
+
+export type FvgLifecycleMetadata = {
+  isFresh: boolean;
+  touchCount: number;
+  firstTouchedAt?: number;
+  lastTouchedAt?: number;
+  deepestMitigationPrice?: number;
+};
+
 export type BaseSmcAoi = TemporalProvenance & {
   zoneId: string;
   sourceId: string;
@@ -73,6 +133,8 @@ export type BaseSmcAoi = TemporalProvenance & {
 export type FvgAoi = BaseSmcAoi & {
   aoiType: 'FVG';
   sourceCandleTimes: [number, number, number];
+  lifecycle: FvgLifecycleMetadata;
+  quality: FvgQualityAssessment;
 };
 
 export type OrderBlockAoi = BaseSmcAoi & {
@@ -97,6 +159,12 @@ export type LiquiditySweepEvidence = TemporalProvenance & {
 
 export type SmcAoiFactType =
   | 'FVG_ZONE_AVAILABLE'
+  | 'FVG_CREATED_WITH_DISPLACEMENT'
+  | 'FVG_CREATED_AFTER_BOS'
+  | 'FVG_TOO_SMALL'
+  | 'FVG_NEAR_MAJOR_BARRIER'
+  | 'FVG_LOW_QUALITY'
+  | 'FVG_TRAP_RISK'
   | 'PRICE_RETURNED_TO_FVG'
   | 'FVG_FIRST_RETURN_CONFIRMED'
   | 'FVG_REACTION_CONFIRMED'
@@ -181,6 +249,23 @@ export type SmartMoneyConfig = {
   strictMode: boolean;
   fvg: {
     minGapBps: number;
+    quality: {
+      atrPeriod: number;
+      minGapBpsForAcceptable: number;
+      minGapAtrMultipleForAcceptable?: number;
+      displacement: {
+        minBodyToRangeRatio: number;
+        minRangeAtrMultiple: number;
+        bullishMinCloseLocationPct: number;
+        bearishMaxCloseLocationPct: number;
+      };
+      structure: {
+        maxCandlesAfterBos: number;
+      };
+      barriers: {
+        maxDistancePct: number;
+      };
+    };
   };
   orderBlock: {
     requireBos: boolean;

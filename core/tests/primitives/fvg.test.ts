@@ -16,7 +16,7 @@ function candle(i: number, open: number, high: number, low: number, close: numbe
 }
 
 describe('FVG primitives', () => {
-  it('preserves bullish impulse candle color rule and stable id mapping', () => {
+  it('detects bullish geometry gaps and preserves stable id mapping', () => {
     const zones = detectFvgZones([
       candle(0, 100, 105, 98, 104),
       candle(1, 104, 115, 103, 114),
@@ -30,12 +30,22 @@ describe('FVG primitives', () => {
     expect(zones[0]!.gapSizeAtr).toBeCloseTo(0.3);
   });
 
-  it('rejects bullish FVG when impulse candle is bearish', () => {
+  it('keeps geometry-valid FVG when impulse candle is bearish by default', () => {
     const zones = detectFvgZones([
       candle(0, 100, 105, 98, 104),
       candle(1, 115, 116, 103, 106),
       candle(2, 106, 120, 108, 119),
     ], 10);
+
+    expect(zones).toHaveLength(1);
+  });
+
+  it('can still apply an explicit candle-color impulse filter', () => {
+    const zones = detectFvgZones([
+      candle(0, 100, 105, 98, 104),
+      candle(1, 115, 116, 103, 106),
+      candle(2, 106, 120, 108, 119),
+    ], 10, { impulseRule: 'CANDLE_COLOR' });
 
     expect(zones).toHaveLength(0);
   });

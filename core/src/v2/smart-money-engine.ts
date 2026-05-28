@@ -2,7 +2,14 @@ import { buildFactId, buildSnapshotId, buildSourceId, buildSweepId, buildZoneId 
 import { resolveSmartMoneyConfig } from './smc-config.js';
 import type {
   Candle,
+  FvgDisplacementMetrics,
   FvgAoi,
+  FvgLifecycleMetadata,
+  FvgNearbyBarrier,
+  FvgQualityAssessment,
+  FvgQualityFlag,
+  FvgSizeMetrics,
+  FvgStructureContext,
   LiquidityReferenceLevel,
   LiquiditySweepEvidence,
   OrderBlockAoi,
@@ -43,7 +50,7 @@ export function runSmartMoneyEngine(input: SmartMoneyEngineInput): SmartMoneyEng
   const aois = config.sourceZoneTimeframes.flatMap((timeframe) => {
     const history = candles[timeframe] ?? [];
     return [
-      ...detectFvgAois(input.symbol, timeframe, history, observedAt, config, violations),
+      ...detectFvgAois(input.symbol, timeframe, history, observedAt, config, violations, input.referenceLevels ?? []),
       ...detectOrderBlockAois(input.symbol, timeframe, history, observedAt, config),
     ];
   }).sort(compareAois);
@@ -77,7 +84,16 @@ function validateConfig(config: SmartMoneyConfig, input: SmartMoneyEngineInput):
       violations.push(violation(input, 'FORBIDDEN_SOURCE_TIMEFRAME', 'FATAL', `Source zone timeframe ${timeframe} is forbidden.`, timeframe as Timeframe));
     }
   }
-  if (config.fvg.minGapBps < 0 || config.sweeps.validForCandles <= 0 || config.sweeps.minWickExtensionBps < 0) {
+  if (
+    config.fvg.minGapBps < 0 ||
+    config.fvg.quality.atrPeriod <= 0 ||
+    config.fvg.quality.minGapBpsForAcceptable < 0 ||
+    config.fvg.quality.displacement.minBodyToRangeRatio < 0 ||
+    config.fvg.quality.displacement.minRangeAtrMultiple < 0 ||
+    config.fvg.quality.barriers.maxDistancePct < 0 ||
+    config.sweeps.validForCandles <= 0 ||
+    config.sweeps.minWickExtensionBps < 0
+  ) {
     violations.push(violation(input, 'INVALID_CONFIG', 'FATAL', 'SMI configuration contains invalid numeric thresholds.'));
   }
   return violations;
@@ -145,6 +161,7 @@ function detectFvgAois(
   observedAt: number,
   config: SmartMoneyConfig,
   violations: SmcEngineViolation[],
+  referenceLevels: LiquidityReferenceLevel[],
 ): FvgAoi[] {
   const aois: FvgAoi[] = [];
   for (let index = 2; index < candles.length; index += 1) {
@@ -164,21 +181,29 @@ function detectFvgAois(
       aoiHigh = first.low;
     }
     if (side === undefined) continue;
-    const gapBps = ((aoiHigh - aoiLow) / aoiLow) * 10_000;
-    if (gapBps < config.fvg.minGapBps) {
+    const sourceTime = confirming.openTime;
+    const availableFrom = confirming.closeTime!;
+    const quality = analyzeFvgQuality({
+      candles,
+      index,
+      side,
+      aoiLow,
+      aoiHigh,
+      config,
+      referenceLevels,
+      availableFrom,
+    });
+    if (quality.flags.includes('TOO_SMALL')) {
       violations.push({
         code: 'FVG_TOO_SMALL',
         severity: 'INFO',
-        message: `FVG candidate below minimum gap on ${timeframe}.`,
+        message: `FVG below quality minimum gap on ${timeframe}.`,
         symbol: symbol.toUpperCase(),
         timeframe,
-        candleTime: confirming.closeTime!,
+        candleTime: availableFrom,
         cursorMs: observedAt,
       });
-      continue;
     }
-    const sourceTime = confirming.openTime;
-    const availableFrom = confirming.closeTime!;
     const base: FvgAoi = {
       aoiType: 'FVG',
       zoneId: buildZoneId({ symbol, sourceTimeframe: timeframe, aoiType: 'FVG', side, sourceCandleTime: sourceTime, aoiLow, aoiHigh }),
@@ -197,10 +222,165 @@ function detectFvgAois(
       reactionConfirmed: false,
       invalidated: false,
       sourceCandleTimes: [first.openTime, middle.openTime, confirming.openTime],
+      lifecycle: {
+        isFresh: true,
+        touchCount: 0,
+      },
+      quality,
     };
     aois.push(applyLifecycle(base, candles));
   }
   return aois;
+}
+
+function analyzeFvgQuality(input: {
+  candles: Candle[];
+  index: number;
+  side: SmcSide;
+  aoiLow: number;
+  aoiHigh: number;
+  config: SmartMoneyConfig;
+  referenceLevels: LiquidityReferenceLevel[];
+  availableFrom: number;
+}): FvgQualityAssessment {
+  const middle = input.candles[input.index - 1]!;
+  const atr = calculateAtr(input.candles, input.index, input.config.fvg.quality.atrPeriod);
+  const displacement = calculateDisplacement(middle, input.side, atr, input.config);
+  const size = calculateFvgSize(input.aoiLow, input.aoiHigh, atr, input.config);
+  const structure = findFvgStructureContext(input.candles, input.index, input.side, input.config);
+  const nearbyBarriers = findNearbyBarriers(input.aoiLow, input.aoiHigh, input.side, input.referenceLevels, input.availableFrom, input.config);
+  const flags: FvgQualityFlag[] = [];
+
+  flags.push(displacement.passed ? 'CREATED_WITH_DISPLACEMENT' : 'CREATED_WITHOUT_DISPLACEMENT');
+  flags.push(structure.formedAfterBos ? 'CREATED_AFTER_BOS' : 'NO_BOS_CONTEXT');
+  if (!size.passedMinSize) flags.push('TOO_SMALL');
+  if (nearbyBarriers.length > 0) flags.push('NEAR_MAJOR_BARRIER');
+
+  const verdict = nearbyBarriers.length > 0
+    ? 'TRAP_RISK'
+    : !size.passedMinSize || !displacement.passed || !structure.formedAfterBos
+      ? 'WEAK'
+      : 'STRONG';
+
+  return {
+    policyVersion: 'fvg-quality-v1',
+    verdict,
+    displacement,
+    size,
+    structure,
+    nearbyBarriers,
+    flags,
+  };
+}
+
+function calculateDisplacement(
+  candle: Candle,
+  side: SmcSide,
+  atr: number | undefined,
+  config: SmartMoneyConfig,
+): FvgDisplacementMetrics {
+  const rangeSize = candle.high - candle.low;
+  const bodySize = Math.abs(candle.close - candle.open);
+  const bodyToRangeRatio = rangeSize > 0 ? bodySize / rangeSize : 0;
+  const closeLocationPct = rangeSize > 0 ? (candle.close - candle.low) / rangeSize : 0.5;
+  const rangeAtrMultiple = atr === undefined || atr <= 0 ? undefined : rangeSize / atr;
+  const directionPasses = side === 'BULLISH' ? candle.close > candle.open : candle.close < candle.open;
+  const closeLocationPasses = side === 'BULLISH'
+    ? closeLocationPct >= config.fvg.quality.displacement.bullishMinCloseLocationPct
+    : closeLocationPct <= config.fvg.quality.displacement.bearishMaxCloseLocationPct;
+  const atrPasses = rangeAtrMultiple === undefined || rangeAtrMultiple >= config.fvg.quality.displacement.minRangeAtrMultiple;
+  return {
+    bodySize,
+    rangeSize,
+    bodyToRangeRatio,
+    ...(rangeAtrMultiple === undefined ? {} : { rangeAtrMultiple }),
+    closeLocationPct,
+    direction: side,
+    passed: directionPasses &&
+      bodyToRangeRatio >= config.fvg.quality.displacement.minBodyToRangeRatio &&
+      atrPasses &&
+      closeLocationPasses,
+  };
+}
+
+function calculateFvgSize(aoiLow: number, aoiHigh: number, atr: number | undefined, config: SmartMoneyConfig): FvgSizeMetrics {
+  const gapSizeAbs = aoiHigh - aoiLow;
+  const gapSizePct = (gapSizeAbs / aoiLow) * 100;
+  const gapBps = gapSizePct * 100;
+  const gapAtrMultiple = atr === undefined || atr <= 0 ? undefined : gapSizeAbs / atr;
+  const minGapBps = Math.max(config.fvg.minGapBps, config.fvg.quality.minGapBpsForAcceptable);
+  const passedAtr = config.fvg.quality.minGapAtrMultipleForAcceptable === undefined ||
+    (gapAtrMultiple !== undefined && gapAtrMultiple >= config.fvg.quality.minGapAtrMultipleForAcceptable);
+  return {
+    gapSizeAbs,
+    gapSizePct,
+    gapBps,
+    ...(gapAtrMultiple === undefined ? {} : { gapAtrMultiple }),
+    passedMinSize: gapBps >= minGapBps && passedAtr,
+  };
+}
+
+function findFvgStructureContext(
+  candles: Candle[],
+  index: number,
+  side: SmcSide,
+  config: SmartMoneyConfig,
+): FvgStructureContext {
+  const minIndex = Math.max(1, index - config.fvg.quality.structure.maxCandlesAfterBos);
+  for (let bosIndex = index; bosIndex >= minIndex; bosIndex -= 1) {
+    const current = candles[bosIndex]!;
+    const previous = candles[bosIndex - 1]!;
+    const bullishBos = side === 'BULLISH' && current.close > previous.high;
+    const bearishBos = side === 'BEARISH' && current.close < previous.low;
+    if (!bullishBos && !bearishBos) continue;
+    return {
+      formedAfterBos: true,
+      relatedStructureBreakId: [current.symbol.toUpperCase(), current.timeframe, 'BOS', side, current.closeTime].join(':'),
+      candlesAfterBreak: index - bosIndex,
+    };
+  }
+  return { formedAfterBos: false };
+}
+
+function findNearbyBarriers(
+  aoiLow: number,
+  aoiHigh: number,
+  side: SmcSide,
+  referenceLevels: LiquidityReferenceLevel[],
+  availableFrom: number,
+  config: SmartMoneyConfig,
+): FvgNearbyBarrier[] {
+  const maxDistancePct = config.fvg.quality.barriers.maxDistancePct;
+  const barriers: FvgNearbyBarrier[] = [];
+  for (const reference of referenceLevels) {
+    if (reference.detectedAt > availableFrom || !Number.isFinite(reference.price) || reference.price <= 0) continue;
+    const above = reference.price >= aoiHigh;
+    const below = reference.price <= aoiLow;
+    if (side === 'BULLISH' && !above) continue;
+    if (side === 'BEARISH' && !below) continue;
+    const edge = side === 'BULLISH' ? aoiHigh : aoiLow;
+    const distancePct = (Math.abs(reference.price - edge) / edge) * 100;
+    if (distancePct > maxDistancePct) continue;
+    barriers.push({
+      referenceId: reference.referenceId,
+      type: reference.type,
+      price: reference.price,
+      distancePct,
+      direction: above ? 'ABOVE' : 'BELOW',
+    });
+  }
+  return barriers.sort((a, b) => a.distancePct - b.distancePct || a.referenceId.localeCompare(b.referenceId));
+}
+
+function calculateAtr(candles: Candle[], endIndex: number, period: number): number | undefined {
+  const ranges: number[] = [];
+  for (let index = Math.max(0, endIndex - period + 1); index <= endIndex; index += 1) {
+    const candle = candles[index];
+    if (candle === undefined) continue;
+    ranges.push(candle.high - candle.low);
+  }
+  if (ranges.length === 0) return undefined;
+  return ranges.reduce((sum, value) => sum + value, 0) / ranges.length;
 }
 
 function detectOrderBlockAois(
@@ -261,6 +441,10 @@ function detectOrderBlockAois(
 function applyLifecycle<T extends FvgAoi | OrderBlockAoi>(aoi: T, candles: Candle[]): T {
   let next: T = aoi;
   let returned = false;
+  let touchCount = aoi.aoiType === 'FVG' ? aoi.lifecycle.touchCount : 0;
+  let firstTouchedAt = aoi.aoiType === 'FVG' ? aoi.lifecycle.firstTouchedAt : undefined;
+  let lastTouchedAt = aoi.aoiType === 'FVG' ? aoi.lifecycle.lastTouchedAt : undefined;
+  let deepestMitigationPrice = aoi.aoiType === 'FVG' ? aoi.lifecycle.deepestMitigationPrice : undefined;
   for (const candle of candles) {
     if (candle.closeTime! <= aoi.availableFrom) continue;
     const invalidated = aoi.side === 'BULLISH' ? candle.close < aoi.aoiLow : candle.close > aoi.aoiHigh;
@@ -271,6 +455,10 @@ function applyLifecycle<T extends FvgAoi | OrderBlockAoi>(aoi: T, candles: Candl
     if (next.reactionConfirmed) continue;
     const intersects = candle.high >= aoi.aoiLow && candle.low <= aoi.aoiHigh;
     if (!intersects) continue;
+    touchCount += 1;
+    firstTouchedAt ??= candle.closeTime!;
+    lastTouchedAt = candle.closeTime!;
+    deepestMitigationPrice = deepestMitigation(aoi, candle, deepestMitigationPrice);
     const mitigationPct = Math.max(next.mitigationPct, calculateMitigation(aoi, candle));
     const reaction = aoi.side === 'BULLISH' ? candle.close > aoi.aoiHigh : candle.close < aoi.aoiLow;
     if (reaction) {
@@ -287,9 +475,23 @@ function applyLifecycle<T extends FvgAoi | OrderBlockAoi>(aoi: T, candles: Candl
     } else {
       next = { ...next, state: 'MITIGATED', mitigationPct };
     }
+    if (next.aoiType === 'FVG') {
+      next = withFvgLifecycle(next, {
+        isFresh: touchCount === 0,
+        touchCount,
+        ...(firstTouchedAt === undefined ? {} : { firstTouchedAt }),
+        ...(lastTouchedAt === undefined ? {} : { lastTouchedAt }),
+        ...(deepestMitigationPrice === undefined ? {} : { deepestMitigationPrice }),
+      });
+    }
     returned = true;
   }
   return next;
+}
+
+function withFvgLifecycle<T extends FvgAoi | OrderBlockAoi>(aoi: T, lifecycle: FvgLifecycleMetadata): T {
+  if (aoi.aoiType !== 'FVG') return aoi;
+  return { ...aoi, lifecycle } as T;
 }
 
 function appendAoiFacts(aoi: FvgAoi | OrderBlockAoi, facts: SmcAoiFact[], events: SmcLifecycleEvent[]): void {
@@ -297,6 +499,9 @@ function appendAoiFacts(aoi: FvgAoi | OrderBlockAoi, facts: SmcAoiFact[], events
   const availableFact = zoneFact(aoi, availableType, aoi.availableFrom);
   facts.push(availableFact);
   events.push(zoneEvent(aoi, aoi.aoiType === 'FVG' ? 'FVG_AVAILABLE' : 'ORDER_BLOCK_AVAILABLE', aoi.availableFrom));
+  if (aoi.aoiType === 'FVG') {
+    appendFvgQualityFacts(aoi, availableFact, facts);
+  }
   if (aoi.state === 'RETURNED' || aoi.state === 'MITIGATED' || aoi.state === 'REACTION_CONFIRMED') {
     const returnedType = aoi.aoiType === 'FVG' ? 'PRICE_RETURNED_TO_FVG' : 'PRICE_RETURNED_TO_ORDER_BLOCK';
     const returnedAt = aoi.returnedAt ?? aoi.observedAt;
@@ -318,6 +523,28 @@ function appendAoiFacts(aoi: FvgAoi | OrderBlockAoi, facts: SmcAoiFact[], events
     const invalidatedAt = aoi.invalidatedAt ?? aoi.observedAt;
     facts.push(zoneFact(aoi, invalidatedType, invalidatedAt, [availableFact.factId]));
     events.push(zoneEvent(aoi, aoi.aoiType === 'FVG' ? 'FVG_INVALIDATED' : 'ORDER_BLOCK_INVALIDATED', invalidatedAt));
+  }
+}
+
+function appendFvgQualityFacts(aoi: FvgAoi, availableFact: SmcAoiFact, facts: SmcAoiFact[]): void {
+  const relatedFactIds = [availableFact.factId];
+  if (aoi.quality.flags.includes('CREATED_WITH_DISPLACEMENT')) {
+    facts.push(zoneFact(aoi, 'FVG_CREATED_WITH_DISPLACEMENT', aoi.availableFrom, relatedFactIds));
+  }
+  if (aoi.quality.flags.includes('CREATED_AFTER_BOS')) {
+    facts.push(zoneFact(aoi, 'FVG_CREATED_AFTER_BOS', aoi.availableFrom, relatedFactIds));
+  }
+  if (aoi.quality.flags.includes('TOO_SMALL')) {
+    facts.push(zoneFact(aoi, 'FVG_TOO_SMALL', aoi.availableFrom, relatedFactIds));
+  }
+  if (aoi.quality.flags.includes('NEAR_MAJOR_BARRIER')) {
+    facts.push(zoneFact(aoi, 'FVG_NEAR_MAJOR_BARRIER', aoi.availableFrom, relatedFactIds));
+  }
+  if (aoi.quality.verdict === 'WEAK') {
+    facts.push(zoneFact(aoi, 'FVG_LOW_QUALITY', aoi.availableFrom, relatedFactIds));
+  }
+  if (aoi.quality.verdict === 'TRAP_RISK') {
+    facts.push(zoneFact(aoi, 'FVG_TRAP_RISK', aoi.availableFrom, relatedFactIds));
   }
 }
 
@@ -496,6 +723,14 @@ function calculateMitigation(aoi: FvgAoi | OrderBlockAoi, candle: Candle): numbe
     ? aoi.aoiHigh - Math.max(aoi.aoiLow, candle.low)
     : Math.min(aoi.aoiHigh, candle.high) - aoi.aoiLow;
   return Math.max(0, Math.min(100, (depth / width) * 100));
+}
+
+function deepestMitigation(aoi: FvgAoi | OrderBlockAoi, candle: Candle, current: number | undefined): number {
+  const candidate = aoi.side === 'BULLISH'
+    ? Math.max(aoi.aoiLow, Math.min(aoi.aoiHigh, candle.low))
+    : Math.min(aoi.aoiHigh, Math.max(aoi.aoiLow, candle.high));
+  if (current === undefined) return candidate;
+  return aoi.side === 'BULLISH' ? Math.min(current, candidate) : Math.max(current, candidate);
 }
 
 function compareAois(a: FvgAoi | OrderBlockAoi, b: FvgAoi | OrderBlockAoi): number {
