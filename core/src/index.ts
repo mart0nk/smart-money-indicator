@@ -20,6 +20,7 @@ export {
   buildSourceId,
   buildSweepId,
   buildFactId,
+  normalizeIdNumber,
 } from './v2/smc-ids.js';
 export type {
   PrimitiveBosEvent as BosEvent,
@@ -71,6 +72,7 @@ export type {
   SmcEngineViolationCode,
   SmcEngineViolation,
   SmartMoneyConfig,
+  SmartMoneyConfigInput,
   SmartMoneyEngineInput,
   SmartMoneyEngineOutput,
   SmartMoneyRollingConfig,

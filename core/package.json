@@ -5,7 +5,13 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
-    "./config": "./dist/v2/smc-config.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./config": {
+      "types": "./dist/v2/smc-config.d.ts",
+      "import": "./dist/v2/smc-config.js"
+    }
   }
 }

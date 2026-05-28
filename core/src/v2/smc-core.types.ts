@@ -165,12 +165,12 @@ export type SmcAoiFactType =
   | 'FVG_NEAR_MAJOR_BARRIER'
   | 'FVG_LOW_QUALITY'
   | 'FVG_TRAP_RISK'
-  | 'PRICE_RETURNED_TO_FVG'
+  | 'IMBALANCE_PULLBACK_LOCATION_CONFIRMED'
   | 'FVG_FIRST_RETURN_CONFIRMED'
   | 'FVG_REACTION_CONFIRMED'
   | 'FVG_INVALIDATED'
   | 'ORDER_BLOCK_AVAILABLE'
-  | 'PRICE_RETURNED_TO_ORDER_BLOCK'
+  | 'PULLBACK_INTO_ORDER_BLOCK'
   | 'ORDER_BLOCK_REACTION_CONFIRMED'
   | 'ORDER_BLOCK_INVALIDATED'
   | 'SELL_SIDE_SWEEP_DETECTED'
@@ -279,18 +279,49 @@ export type SmartMoneyConfig = {
   };
 };
 
+export type SmartMoneyConfigInput = {
+  version?: string;
+  sourceZoneTimeframes?: SmcSourceTimeframe[];
+  sweepTimeframes?: SweepTimeframe[];
+  forbiddenSourceZoneTimeframes?: Array<'5m' | '3m' | '1m'>;
+  strictMode?: boolean;
+  fvg?: {
+    minGapBps?: number;
+    quality?: {
+      atrPeriod?: number;
+      minGapBpsForAcceptable?: number;
+      minGapAtrMultipleForAcceptable?: number;
+      displacement?: {
+        minBodyToRangeRatio?: number;
+        minRangeAtrMultiple?: number;
+        bullishMinCloseLocationPct?: number;
+        bearishMaxCloseLocationPct?: number;
+      };
+      structure?: {
+        maxCandlesAfterBos?: number;
+      };
+      barriers?: {
+        maxDistancePct?: number;
+      };
+    };
+  };
+  orderBlock?: Partial<SmartMoneyConfig['orderBlock']>;
+  sweeps?: Partial<SmartMoneyConfig['sweeps']>;
+};
+
 export type SmartMoneyEngineInput = {
   symbol: string;
   cursorMs: number;
   candlesByTimeframe: Partial<Record<SmcInputTimeframe, Candle[]>>;
   referenceLevels?: LiquidityReferenceLevel[];
-  config?: Partial<SmartMoneyConfig>;
+  config?: SmartMoneyConfigInput;
 };
 
 export type SmartMoneyEngineOutput = {
   contractVersion: 'smi-core-v2';
   snapshotId: string;
   configVersion: string;
+  valid: boolean;
   symbol: string;
   cursorMs: number;
   aois: Array<FvgAoi | OrderBlockAoi>;
@@ -312,14 +343,14 @@ export type SmartMoneyRollingUpdate = {
   cursorMs: number;
   closedCandlesByTimeframe: Partial<Record<SmcInputTimeframe, Candle[]>>;
   referenceLevels?: LiquidityReferenceLevel[];
-  config?: Partial<SmartMoneyConfig>;
+  config?: SmartMoneyConfigInput;
 };
 
 export type SmartMoneySnapshotInput = {
   symbol: string;
   cursorMs: number;
   referenceLevels?: LiquidityReferenceLevel[];
-  config?: Partial<SmartMoneyConfig>;
+  config?: SmartMoneyConfigInput;
 };
 
 export type SmartMoneyBufferDiagnostics = {
