@@ -2,6 +2,13 @@
 
 SMI facts describe observable primitives, never a setup selection or trade instruction.
 
+## v2 Fact Rename Migration
+
+- `PRICE_RETURNED_TO_FVG` was renamed to `IMBALANCE_PULLBACK_LOCATION_CONFIRMED`.
+- `PRICE_RETURNED_TO_ORDER_BLOCK` was renamed to `PULLBACK_INTO_ORDER_BLOCK`.
+
+These names are the canonical v2 contract. Consumers should migrate off the legacy names.
+
 | Fact | Meaning | Forbidden interpretation |
 |---|---|---|
 | `FVG_ZONE_AVAILABLE` | Closed three-candle pattern created a valid FVG AOI. | Entry or WATCHLIST verdict. |

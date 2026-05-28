@@ -2,8 +2,17 @@ import { createHash } from 'node:crypto';
 import type { SmartMoneyConfig, SmartMoneyEngineInput } from './smc-core.types.js';
 
 export function normalizeIdNumber(value: number): string {
-  if (!Number.isFinite(value)) return 'NaN';
+  if (!Number.isFinite(value)) {
+    throw new Error(`Cannot encode non-finite number for deterministic id: ${value}`);
+  }
   return Number(value.toFixed(8)).toString();
+}
+
+function encodeSnapshotNumber(value: number): number | string {
+  if (Number.isNaN(value)) return 'NaN';
+  if (value === Infinity) return 'Infinity';
+  if (value === -Infinity) return '-Infinity';
+  return Number(value.toFixed(8));
 }
 
 export function buildZoneId(input: {
@@ -70,35 +79,48 @@ export function buildSnapshotId(input: SmartMoneyEngineInput, config: SmartMoney
       (timeframeCandles ?? [])
         .map((candle) => ({
           timeframe: candle.timeframe,
-          openTime: candle.openTime,
-          closeTime: candle.closeTime,
-          open: candle.open,
-          high: candle.high,
-          low: candle.low,
-          close: candle.close,
-          volume: candle.volume,
+          openTime: encodeSnapshotNumber(candle.openTime),
+          closeTime: candle.closeTime === undefined ? undefined : encodeSnapshotNumber(candle.closeTime),
+          open: encodeSnapshotNumber(candle.open),
+          high: encodeSnapshotNumber(candle.high),
+          low: encodeSnapshotNumber(candle.low),
+          close: encodeSnapshotNumber(candle.close),
+          volume: encodeSnapshotNumber(candle.volume),
           closed: candle.closed,
         }))
-        .sort((a, b) => (a.closeTime ?? a.openTime) - (b.closeTime ?? b.openTime)),
+        .sort((a, b) => String(a.closeTime ?? a.openTime).localeCompare(String(b.closeTime ?? b.openTime))),
     ]);
   const references = (input.referenceLevels ?? [])
     .map((level) => ({
       referenceId: level.referenceId,
       type: level.type,
-      price: level.price,
+      price: encodeSnapshotNumber(level.price),
       side: level.side,
       sourceTimeframe: level.sourceTimeframe,
-      detectedAt: level.detectedAt,
+      detectedAt: encodeSnapshotNumber(level.detectedAt),
     }))
     .sort((a, b) => a.referenceId.localeCompare(b.referenceId));
   return createHash('sha256')
     .update(JSON.stringify({
       symbol: input.symbol.toUpperCase(),
-      cursorMs: input.cursorMs,
-      config,
+      cursorMs: encodeSnapshotNumber(input.cursorMs),
+      config: encodeSnapshotPayload(config),
       candles,
       references,
     }))
     .digest('hex')
     .slice(0, 24);
+}
+
+function encodeSnapshotPayload(value: unknown): unknown {
+  if (typeof value === 'number') return encodeSnapshotNumber(value);
+  if (Array.isArray(value)) return value.map(encodeSnapshotPayload);
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, entry]) => [key, encodeSnapshotPayload(entry)]),
+    );
+  }
+  return value;
 }

@@ -437,12 +437,13 @@ function detectOrderBlockAois(
     const previous = candles[index - 1]!;
     const bullishDisplacement = confirmation.close > confirmation.open;
     const bearishDisplacement = confirmation.close < confirmation.open;
+    const shouldRequireBos = config.orderBlock.requireBos || config.orderBlock.requireConfirmedBos;
     const bullishBos = config.orderBlock.requireConfirmedBos ? confirmation.close > previous.high : confirmation.high > previous.high;
     const bearishBos = config.orderBlock.requireConfirmedBos ? confirmation.close < previous.low : confirmation.low < previous.low;
     const bullish = (!config.orderBlock.requireDisplacement || bullishDisplacement) &&
-      (!config.orderBlock.requireBos || bullishBos);
+      (!shouldRequireBos || bullishBos);
     const bearish = (!config.orderBlock.requireDisplacement || bearishDisplacement) &&
-      (!config.orderBlock.requireBos || bearishBos);
+      (!shouldRequireBos || bearishBos);
     if (!bullish && !bearish) continue;
     const side = chooseOrderBlockSide({ bullish, bearish, bullishDisplacement, bearishDisplacement, bullishBos, bearishBos });
     if (side === undefined) continue;

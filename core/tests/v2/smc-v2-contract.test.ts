@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import * as publicApi from '../../src/index.js';
 import {
   buildZoneId,
+  normalizeIdNumber,
   runSmartMoneyEngine,
   type CanonicalSmcCandle,
   type LiquidityReferenceLevel,
@@ -113,6 +114,10 @@ describe('SMI core v2 contract', () => {
       'IMBALANCE_PULLBACK_LOCATION_CONFIRMED',
       'FVG_FIRST_RETURN_CONFIRMED',
       'FVG_REACTION_CONFIRMED',
+    ]));
+    expect(output.facts.map((fact) => fact.factType)).not.toEqual(expect.arrayContaining([
+      'PRICE_RETURNED_TO_FVG',
+      'PRICE_RETURNED_TO_ORDER_BLOCK',
     ]));
     for (const fact of output.facts.filter((item) => item.zoneId === fvg!.zoneId)) {
       expect(fact.sourceTime).toBeLessThanOrEqual(fact.availableFrom);
@@ -259,6 +264,26 @@ describe('SMI core v2 contract', () => {
     expect(base.snapshotId).not.toBe(configChanged.snapshotId);
   });
 
+  it('encodes non-finite raw input numbers explicitly in snapshot identity', () => {
+    const history = fvgCandles();
+    const nanInput = history.map((item, index) => index === 1 ? { ...item, high: Number.NaN } : item);
+    const infinityInput = history.map((item, index) => index === 1 ? { ...item, high: Infinity } : item);
+    const nanOutput = runSmartMoneyEngine({
+      symbol: 'BTCUSDT',
+      cursorMs: history.at(-1)!.closeTime!,
+      candlesByTimeframe: { '15m': nanInput },
+    });
+    const infinityOutput = runSmartMoneyEngine({
+      symbol: 'BTCUSDT',
+      cursorMs: history.at(-1)!.closeTime!,
+      candlesByTimeframe: { '15m': infinityInput },
+    });
+
+    expect(nanOutput.valid).toBe(false);
+    expect(infinityOutput.valid).toBe(false);
+    expect(nanOutput.snapshotId).not.toBe(infinityOutput.snapshotId);
+  });
+
   it('rejects zero and negative candle prices as malformed in strict mode', () => {
     const bad = fvgCandles().map((item, index) => index === 0 ? { ...item, low: 0 } : item);
     const output = runSmartMoneyEngine({
@@ -296,7 +321,27 @@ describe('SMI core v2 contract', () => {
     expect(a).toBe(b);
   });
 
-  it('applies order block config flags without disabling the detector', () => {
+  it('throws when deterministic id number encoding receives non-finite values', () => {
+    expect(() => normalizeIdNumber(Number.NaN)).toThrow(/non-finite number/);
+    expect(() => normalizeIdNumber(Infinity)).toThrow(/non-finite number/);
+  });
+
+  it('enforces confirmed BOS close even when requireBos is false', () => {
+    const history = [
+      candle('15m', 0, FIFTEEN_MINUTES, 100, 101, 98, 99),
+      candle('15m', 1, FIFTEEN_MINUTES, 99, 102, 98.5, 100.5),
+    ];
+    const output = runSmartMoneyEngine({
+      symbol: 'BTCUSDT',
+      cursorMs: history.at(-1)!.closeTime!,
+      candlesByTimeframe: { '15m': history },
+      config: { orderBlock: { requireBos: false, requireConfirmedBos: true, requireDisplacement: true, boundsPolicy: 'WICK' } },
+    });
+
+    expect(output.aois.some((aoi) => aoi.aoiType === 'ORDER_BLOCK')).toBe(false);
+  });
+
+  it('does not disable order block detection when requireBos is false and confirmed BOS is false', () => {
     const history = [
       candle('15m', 0, FIFTEEN_MINUTES, 100, 101, 98, 99),
       candle('15m', 1, FIFTEEN_MINUTES, 99, 100.5, 98.5, 100),
@@ -305,7 +350,7 @@ describe('SMI core v2 contract', () => {
       symbol: 'BTCUSDT',
       cursorMs: history.at(-1)!.closeTime!,
       candlesByTimeframe: { '15m': history },
-      config: { orderBlock: { requireBos: false, requireConfirmedBos: true, requireDisplacement: true, boundsPolicy: 'WICK' } },
+      config: { orderBlock: { requireBos: false, requireConfirmedBos: false, requireDisplacement: true, boundsPolicy: 'WICK' } },
     });
 
     expect(output.aois.some((aoi) => aoi.aoiType === 'ORDER_BLOCK')).toBe(true);
