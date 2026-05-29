@@ -1,0 +1,246 @@
+{
+  "caseId": "xrp-3m-buy-side-sweep",
+  "description": "Real XRPUSDT 3m candle window with a buy-side sweep against a fixed historical reference level.",
+  "symbol": "XRPUSDT",
+  "timeframes": [
+    "3m"
+  ],
+  "candlesByTimeframe": {
+    "3m": [
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704069720000,
+        "closeTime": 1704069900000,
+        "open": 0.6159,
+        "high": 0.616,
+        "low": 0.6153,
+        "close": 0.6154,
+        "volume": 664053,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704069900000,
+        "closeTime": 1704070080000,
+        "open": 0.6153,
+        "high": 0.6157,
+        "low": 0.6153,
+        "close": 0.6155,
+        "volume": 262215,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704070080000,
+        "closeTime": 1704070260000,
+        "open": 0.6155,
+        "high": 0.6156,
+        "low": 0.6152,
+        "close": 0.6154,
+        "volume": 564804,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704070260000,
+        "closeTime": 1704070440000,
+        "open": 0.6155,
+        "high": 0.6157,
+        "low": 0.6152,
+        "close": 0.6157,
+        "volume": 339834,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704070440000,
+        "closeTime": 1704070620000,
+        "open": 0.6158,
+        "high": 0.616,
+        "low": 0.6155,
+        "close": 0.6158,
+        "volume": 324076,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704070620000,
+        "closeTime": 1704070800000,
+        "open": 0.6157,
+        "high": 0.6166,
+        "low": 0.6156,
+        "close": 0.6162,
+        "volume": 855554,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704070800000,
+        "closeTime": 1704070980000,
+        "open": 0.6161,
+        "high": 0.6162,
+        "low": 0.6153,
+        "close": 0.6156,
+        "volume": 238637,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704070980000,
+        "closeTime": 1704071160000,
+        "open": 0.6156,
+        "high": 0.6157,
+        "low": 0.615,
+        "close": 0.6154,
+        "volume": 347479,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704071160000,
+        "closeTime": 1704071340000,
+        "open": 0.6154,
+        "high": 0.6159,
+        "low": 0.6152,
+        "close": 0.6155,
+        "volume": 583092,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704071340000,
+        "closeTime": 1704071520000,
+        "open": 0.6156,
+        "high": 0.616,
+        "low": 0.6155,
+        "close": 0.6157,
+        "volume": 170927,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704071520000,
+        "closeTime": 1704071700000,
+        "open": 0.6157,
+        "high": 0.6176,
+        "low": 0.6157,
+        "close": 0.6167,
+        "volume": 1265984,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704071700000,
+        "closeTime": 1704071880000,
+        "open": 0.6168,
+        "high": 0.6171,
+        "low": 0.6166,
+        "close": 0.617,
+        "volume": 284856,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704071880000,
+        "closeTime": 1704072060000,
+        "open": 0.6169,
+        "high": 0.617,
+        "low": 0.6166,
+        "close": 0.6169,
+        "volume": 243131,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704072060000,
+        "closeTime": 1704072240000,
+        "open": 0.6168,
+        "high": 0.6172,
+        "low": 0.6166,
+        "close": 0.6171,
+        "volume": 191171,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704072240000,
+        "closeTime": 1704072420000,
+        "open": 0.6172,
+        "high": 0.6176,
+        "low": 0.6169,
+        "close": 0.6173,
+        "volume": 622234,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704072420000,
+        "closeTime": 1704072600000,
+        "open": 0.6172,
+        "high": 0.6174,
+        "low": 0.6171,
+        "close": 0.6173,
+        "volume": 124869,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704072600000,
+        "closeTime": 1704072780000,
+        "open": 0.6173,
+        "high": 0.6176,
+        "low": 0.6171,
+        "close": 0.6173,
+        "volume": 656260,
+        "closed": true
+      },
+      {
+        "symbol": "XRPUSDT",
+        "timeframe": "3m",
+        "openTime": 1704072780000,
+        "closeTime": 1704072960000,
+        "open": 0.6173,
+        "high": 0.6174,
+        "low": 0.6164,
+        "close": 0.6169,
+        "volume": 972138,
+        "closed": true
+      }
+    ]
+  },
+  "referenceLevels": [
+    {
+      "referenceId": "real-window-buy-side-ref",
+      "type": "SWING_HIGH",
+      "price": 0.61715,
+      "side": "BUY_SIDE_LIQUIDITY",
+      "sourceTimeframe": "3m",
+      "detectedAt": 1704070800000
+    }
+  ],
+  "expected": {
+    "sweeps": [
+      "BUY_SIDE_SWEEP"
+    ],
+    "facts": [
+      "BUY_SIDE_SWEEP_DETECTED"
+    ]
+  }
+}

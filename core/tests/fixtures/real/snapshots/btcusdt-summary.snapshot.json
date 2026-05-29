@@ -1,0 +1,29 @@
+{
+  "symbol": "BTCUSDT",
+  "timeframes": [
+    "15m",
+    "3m"
+  ],
+  "totalCursors": 360,
+  "finalAoiCount": 186,
+  "fvgCount": 76,
+  "orderBlockCount": 110,
+  "sweepCount": 0,
+  "factsByType": {
+    "ORDER_BLOCK_AVAILABLE": 110,
+    "FVG_CREATED_AFTER_BOS": 76,
+    "FVG_LOW_QUALITY": 50,
+    "FVG_ZONE_AVAILABLE": 76,
+    "FVG_CREATED_WITH_DISPLACEMENT": 27,
+    "FVG_INVALIDATED": 65,
+    "ORDER_BLOCK_INVALIDATED": 90,
+    "FVG_TOO_SMALL": 4,
+    "PULLBACK_INTO_ORDER_BLOCK": 17,
+    "ORDER_BLOCK_REACTION_CONFIRMED": 15,
+    "FVG_FIRST_RETURN_CONFIRMED": 6,
+    "FVG_REACTION_CONFIRMED": 6,
+    "IMBALANCE_PULLBACK_LOCATION_CONFIRMED": 6
+  },
+  "invalidatedCount": 155,
+  "reactionConfirmedCount": 21
+}

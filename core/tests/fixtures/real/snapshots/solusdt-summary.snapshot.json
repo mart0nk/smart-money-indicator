@@ -1,0 +1,29 @@
+{
+  "symbol": "SOLUSDT",
+  "timeframes": [
+    "15m",
+    "3m"
+  ],
+  "totalCursors": 360,
+  "finalAoiCount": 165,
+  "fvgCount": 63,
+  "orderBlockCount": 102,
+  "sweepCount": 0,
+  "factsByType": {
+    "ORDER_BLOCK_AVAILABLE": 102,
+    "FVG_CREATED_AFTER_BOS": 63,
+    "FVG_CREATED_WITH_DISPLACEMENT": 19,
+    "FVG_ZONE_AVAILABLE": 63,
+    "FVG_LOW_QUALITY": 44,
+    "FVG_INVALIDATED": 53,
+    "ORDER_BLOCK_INVALIDATED": 79,
+    "FVG_TOO_SMALL": 3,
+    "PULLBACK_INTO_ORDER_BLOCK": 19,
+    "ORDER_BLOCK_REACTION_CONFIRMED": 18,
+    "FVG_FIRST_RETURN_CONFIRMED": 4,
+    "FVG_REACTION_CONFIRMED": 4,
+    "IMBALANCE_PULLBACK_LOCATION_CONFIRMED": 4
+  },
+  "invalidatedCount": 132,
+  "reactionConfirmedCount": 22
+}

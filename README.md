@@ -14,7 +14,23 @@ npm install
 npm run typecheck
 npm test
 npm run build
+npm run smoke:exports
 ```
+
+## Packaging
+
+The root package is the public consumer entrypoint:
+
+```ts
+import { runSmartMoneyEngine } from 'smart-money-indicator';
+import { defaultSmartMoneyConfig } from 'smart-money-indicator/config';
+```
+
+Packaging migration:
+
+- The core workspace package name changed from the old scoped name to `smart-money-indicator-core`.
+- Consumers should depend on the root package and import from `smart-money-indicator` or `smart-money-indicator/config`.
+- Existing consumers using the old scoped package name must update package references and imports.
 
 ## Boundaries
 

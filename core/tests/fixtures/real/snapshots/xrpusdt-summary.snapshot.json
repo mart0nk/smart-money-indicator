@@ -1,0 +1,28 @@
+{
+  "symbol": "XRPUSDT",
+  "timeframes": [
+    "15m",
+    "3m"
+  ],
+  "totalCursors": 360,
+  "finalAoiCount": 160,
+  "fvgCount": 67,
+  "orderBlockCount": 93,
+  "sweepCount": 0,
+  "factsByType": {
+    "ORDER_BLOCK_AVAILABLE": 93,
+    "FVG_CREATED_AFTER_BOS": 67,
+    "FVG_LOW_QUALITY": 45,
+    "FVG_ZONE_AVAILABLE": 67,
+    "FVG_INVALIDATED": 58,
+    "ORDER_BLOCK_INVALIDATED": 75,
+    "FVG_CREATED_WITH_DISPLACEMENT": 22,
+    "ORDER_BLOCK_REACTION_CONFIRMED": 12,
+    "PULLBACK_INTO_ORDER_BLOCK": 13,
+    "FVG_FIRST_RETURN_CONFIRMED": 5,
+    "IMBALANCE_PULLBACK_LOCATION_CONFIRMED": 5,
+    "FVG_REACTION_CONFIRMED": 5
+  },
+  "invalidatedCount": 133,
+  "reactionConfirmedCount": 17
+}
