@@ -1,0 +1,311 @@
+{
+  "caseId": "eth-15m-order-block",
+  "description": "Real ETHUSDT 15m window where a bullish order block forms and receives a pullback.",
+  "symbol": "ETHUSDT",
+  "timeframes": [
+    "15m"
+  ],
+  "candlesByTimeframe": {
+    "15m": [
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704067200000,
+        "closeTime": 1704068100000,
+        "open": 2281.87,
+        "high": 2296.97,
+        "low": 2281.27,
+        "close": 2296.71,
+        "volume": 4393.025,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704068100000,
+        "closeTime": 1704069000000,
+        "open": 2296.71,
+        "high": 2297,
+        "low": 2289,
+        "close": 2291.05,
+        "volume": 2690.5061,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704069000000,
+        "closeTime": 1704069900000,
+        "open": 2291.05,
+        "high": 2294.78,
+        "low": 2288.55,
+        "close": 2293.22,
+        "volume": 2201.9447,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704069900000,
+        "closeTime": 1704070800000,
+        "open": 2293.23,
+        "high": 2297.18,
+        "low": 2292.24,
+        "close": 2295.51,
+        "volume": 1486.4425,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704070800000,
+        "closeTime": 1704071700000,
+        "open": 2295.52,
+        "high": 2297.4,
+        "low": 2292.9,
+        "close": 2296.59,
+        "volume": 1412.2053,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704071700000,
+        "closeTime": 1704072600000,
+        "open": 2296.59,
+        "high": 2300.32,
+        "low": 2296.59,
+        "close": 2299.11,
+        "volume": 1669.0732,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704072600000,
+        "closeTime": 1704073500000,
+        "open": 2299.12,
+        "high": 2306.45,
+        "low": 2299.11,
+        "close": 2303.27,
+        "volume": 3207.1637,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704073500000,
+        "closeTime": 1704074400000,
+        "open": 2303.26,
+        "high": 2306.6,
+        "low": 2303.26,
+        "close": 2303.72,
+        "volume": 2124.9838,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704074400000,
+        "closeTime": 1704075300000,
+        "open": 2303.72,
+        "high": 2304.72,
+        "low": 2297.82,
+        "close": 2299.02,
+        "volume": 1823.7417,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704075300000,
+        "closeTime": 1704076200000,
+        "open": 2299.02,
+        "high": 2299.02,
+        "low": 2295.58,
+        "close": 2296.74,
+        "volume": 1163.0004,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704076200000,
+        "closeTime": 1704077100000,
+        "open": 2296.73,
+        "high": 2299.46,
+        "low": 2294.54,
+        "close": 2294.54,
+        "volume": 1403.6463,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704077100000,
+        "closeTime": 1704078000000,
+        "open": 2294.55,
+        "high": 2295.33,
+        "low": 2291.2,
+        "close": 2293.02,
+        "volume": 1417.8649,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704078000000,
+        "closeTime": 1704078900000,
+        "open": 2293.03,
+        "high": 2294.5,
+        "low": 2289,
+        "close": 2289.04,
+        "volume": 2515.2115,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704078900000,
+        "closeTime": 1704079800000,
+        "open": 2289.04,
+        "high": 2289.05,
+        "low": 2281,
+        "close": 2282.37,
+        "volume": 2252.9774,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704079800000,
+        "closeTime": 1704080700000,
+        "open": 2282.37,
+        "high": 2283.8,
+        "low": 2273.24,
+        "close": 2276.29,
+        "volume": 3284.8894,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704080700000,
+        "closeTime": 1704081600000,
+        "open": 2276.29,
+        "high": 2277.58,
+        "low": 2271,
+        "close": 2273.81,
+        "volume": 2692.6577,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704081600000,
+        "closeTime": 1704082500000,
+        "open": 2273.8,
+        "high": 2278.8,
+        "low": 2271.77,
+        "close": 2274.08,
+        "volume": 2330.4382,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704082500000,
+        "closeTime": 1704083400000,
+        "open": 2274.09,
+        "high": 2274.53,
+        "low": 2265.24,
+        "close": 2271.62,
+        "volume": 3330.3254,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704083400000,
+        "closeTime": 1704084300000,
+        "open": 2271.62,
+        "high": 2276.11,
+        "low": 2271.34,
+        "close": 2274.41,
+        "volume": 1723.7117,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704084300000,
+        "closeTime": 1704085200000,
+        "open": 2274.4,
+        "high": 2279.86,
+        "low": 2272.56,
+        "close": 2279.55,
+        "volume": 2297.1009,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704085200000,
+        "closeTime": 1704086100000,
+        "open": 2279.54,
+        "high": 2283.19,
+        "low": 2276.29,
+        "close": 2283.19,
+        "volume": 2409.8417,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704086100000,
+        "closeTime": 1704087000000,
+        "open": 2283.19,
+        "high": 2283.36,
+        "low": 2277.05,
+        "close": 2278.55,
+        "volume": 1509.3508,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704087000000,
+        "closeTime": 1704087900000,
+        "open": 2278.54,
+        "high": 2280.32,
+        "low": 2276.26,
+        "close": 2279.3,
+        "volume": 1324.3438,
+        "closed": true
+      },
+      {
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "openTime": 1704087900000,
+        "closeTime": 1704088800000,
+        "open": 2279.3,
+        "high": 2279.31,
+        "low": 2272.62,
+        "close": 2275.89,
+        "volume": 1461.5802,
+        "closed": true
+      }
+    ]
+  },
+  "expected": {
+    "aois": [
+      {
+        "aoiType": "ORDER_BLOCK",
+        "side": "BULLISH"
+      }
+    ],
+    "facts": [
+      "PULLBACK_INTO_ORDER_BLOCK"
+    ]
+  }
+}

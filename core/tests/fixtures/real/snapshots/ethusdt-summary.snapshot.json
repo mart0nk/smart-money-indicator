@@ -1,0 +1,29 @@
+{
+  "symbol": "ETHUSDT",
+  "timeframes": [
+    "15m",
+    "3m"
+  ],
+  "totalCursors": 360,
+  "finalAoiCount": 179,
+  "fvgCount": 78,
+  "orderBlockCount": 101,
+  "sweepCount": 0,
+  "factsByType": {
+    "ORDER_BLOCK_AVAILABLE": 101,
+    "FVG_CREATED_AFTER_BOS": 78,
+    "FVG_LOW_QUALITY": 57,
+    "FVG_ZONE_AVAILABLE": 78,
+    "FVG_INVALIDATED": 66,
+    "FVG_TOO_SMALL": 2,
+    "ORDER_BLOCK_INVALIDATED": 80,
+    "FVG_CREATED_WITH_DISPLACEMENT": 21,
+    "ORDER_BLOCK_REACTION_CONFIRMED": 13,
+    "PULLBACK_INTO_ORDER_BLOCK": 15,
+    "FVG_FIRST_RETURN_CONFIRMED": 4,
+    "FVG_REACTION_CONFIRMED": 4,
+    "IMBALANCE_PULLBACK_LOCATION_CONFIRMED": 4
+  },
+  "invalidatedCount": 146,
+  "reactionConfirmedCount": 17
+}

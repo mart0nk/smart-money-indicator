@@ -1,0 +1,348 @@
+{
+  "caseId": "btc-15m-bullish-fvg-reaction",
+  "description": "Real BTCUSDT 15m window where a bullish FVG forms, is touched, and reaction is confirmed.",
+  "symbol": "BTCUSDT",
+  "timeframes": [
+    "15m"
+  ],
+  "candlesByTimeframe": {
+    "15m": [
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704298500000,
+        "closeTime": 1704299400000,
+        "open": 43272.89,
+        "high": 43461.71,
+        "low": 43137.39,
+        "close": 43434.39,
+        "volume": 1152.75714,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704299400000,
+        "closeTime": 1704300300000,
+        "open": 43434.39,
+        "high": 43434.4,
+        "low": 42787.84,
+        "close": 42950.81,
+        "volume": 1709.86218,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704300300000,
+        "closeTime": 1704301200000,
+        "open": 42950.81,
+        "high": 43080,
+        "low": 42773.34,
+        "close": 42992.67,
+        "volume": 863.88173,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704301200000,
+        "closeTime": 1704302100000,
+        "open": 42992.68,
+        "high": 43034.59,
+        "low": 42816.35,
+        "close": 42917.62,
+        "volume": 673.87596,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704302100000,
+        "closeTime": 1704303000000,
+        "open": 42917.62,
+        "high": 42917.62,
+        "low": 42600,
+        "close": 42785.6,
+        "volume": 1015.45562,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704303000000,
+        "closeTime": 1704303900000,
+        "open": 42785.6,
+        "high": 42916.66,
+        "low": 42741.1,
+        "close": 42769.59,
+        "volume": 541.0026,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704303900000,
+        "closeTime": 1704304800000,
+        "open": 42769.59,
+        "high": 42919.84,
+        "low": 42637.04,
+        "close": 42906,
+        "volume": 714.84223,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704304800000,
+        "closeTime": 1704305700000,
+        "open": 42906,
+        "high": 43050,
+        "low": 42831.1,
+        "close": 42878,
+        "volume": 630.11987,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704305700000,
+        "closeTime": 1704306600000,
+        "open": 42877.99,
+        "high": 43014.41,
+        "low": 42732.74,
+        "close": 42749.12,
+        "volume": 549.03983,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704306600000,
+        "closeTime": 1704307500000,
+        "open": 42749.13,
+        "high": 42797.27,
+        "low": 42500,
+        "close": 42697.34,
+        "volume": 658.31772,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704307500000,
+        "closeTime": 1704308400000,
+        "open": 42697.35,
+        "high": 42734.86,
+        "low": 42000,
+        "close": 42255.72,
+        "volume": 1476.57254,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704308400000,
+        "closeTime": 1704309300000,
+        "open": 42255.72,
+        "high": 42518.66,
+        "low": 42161.1,
+        "close": 42450.01,
+        "volume": 1278.69135,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704309300000,
+        "closeTime": 1704310200000,
+        "open": 42450,
+        "high": 42673.55,
+        "low": 42438,
+        "close": 42673.55,
+        "volume": 874.11027,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704310200000,
+        "closeTime": 1704311100000,
+        "open": 42673.55,
+        "high": 43011.1,
+        "low": 42631.1,
+        "close": 42687.5,
+        "volume": 991.18036,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704311100000,
+        "closeTime": 1704312000000,
+        "open": 42687.49,
+        "high": 42718.51,
+        "low": 42550,
+        "close": 42596.67,
+        "volume": 518.31748,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704312000000,
+        "closeTime": 1704312900000,
+        "open": 42596.66,
+        "high": 42685.11,
+        "low": 42518.7,
+        "close": 42606.23,
+        "volume": 501.9799,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704312900000,
+        "closeTime": 1704313800000,
+        "open": 42606.24,
+        "high": 42771.09,
+        "low": 42603.21,
+        "close": 42720,
+        "volume": 507.76312,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704313800000,
+        "closeTime": 1704314700000,
+        "open": 42719.99,
+        "high": 42846.17,
+        "low": 42643.07,
+        "close": 42670.05,
+        "volume": 510.02398,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704314700000,
+        "closeTime": 1704315600000,
+        "open": 42670.04,
+        "high": 42776,
+        "low": 42661.9,
+        "close": 42721.02,
+        "volume": 411.77287,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704315600000,
+        "closeTime": 1704316500000,
+        "open": 42721.02,
+        "high": 42778,
+        "low": 42581.1,
+        "close": 42630.01,
+        "volume": 346.08147,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704316500000,
+        "closeTime": 1704317400000,
+        "open": 42630.01,
+        "high": 42900.11,
+        "low": 42627.47,
+        "close": 42816,
+        "volume": 620.89535,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704317400000,
+        "closeTime": 1704318300000,
+        "open": 42815.99,
+        "high": 42870,
+        "low": 42757.78,
+        "close": 42862.86,
+        "volume": 335.34259,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704318300000,
+        "closeTime": 1704319200000,
+        "open": 42862.85,
+        "high": 42966.27,
+        "low": 42850,
+        "close": 42917.62,
+        "volume": 390.21114,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704319200000,
+        "closeTime": 1704320100000,
+        "open": 42917.61,
+        "high": 42941.1,
+        "low": 42830.27,
+        "close": 42922.08,
+        "volume": 395.41272,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704320100000,
+        "closeTime": 1704321000000,
+        "open": 42922.09,
+        "high": 42939.24,
+        "low": 42654.65,
+        "close": 42688.81,
+        "volume": 561.24354,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704321000000,
+        "closeTime": 1704321900000,
+        "open": 42688.81,
+        "high": 42751.09,
+        "low": 42647.73,
+        "close": 42653.32,
+        "volume": 262.37001,
+        "closed": true
+      },
+      {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "openTime": 1704321900000,
+        "closeTime": 1704322800000,
+        "open": 42653.33,
+        "high": 42758.86,
+        "low": 42596.24,
+        "close": 42749.68,
+        "volume": 166.85964,
+        "closed": true
+      }
+    ]
+  },
+  "expected": {
+    "aois": [
+      {
+        "aoiType": "FVG",
+        "side": "BULLISH"
+      }
+    ],
+    "facts": [
+      "IMBALANCE_PULLBACK_LOCATION_CONFIRMED",
+      "FVG_REACTION_CONFIRMED"
+    ]
+  }
+}
