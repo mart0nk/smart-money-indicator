@@ -3,7 +3,7 @@
   "compilerOptions": {
     "noEmit": true,
     "paths": {
-      "@trader-agent/smart-money-indicator-core": ["./core/src/index.ts"]
+      "smart-money-indicator": ["./core/src/index.ts"]
     }
   },
   "include": ["core/src", "core/tests"],

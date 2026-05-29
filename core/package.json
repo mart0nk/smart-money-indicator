@@ -1,5 +1,5 @@
 {
-  "name": "@trader-agent/smart-money-indicator-core",
+  "name": "smart-money-indicator-core",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
