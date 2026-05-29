@@ -21,6 +21,7 @@
   "scripts": {
     "build": "tsc -p core/tsconfig.build.json",
     "prepare": "npm run build",
+    "smoke:exports": "npm run build && node ./scripts/smoke-package-exports.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "check:pine-boundary": "rg -n \"request\\.security\\(|request\\.security_lower_tf\\(|request\\.seed\\(|\\bhttp\\b|\\bfetch\\b|strategy\\(|strategy\\.entry|strategy\\.order|strategy\\.exit|strategy\\.close|BUY NOW|SELL NOW|ENTER LONG|ENTER SHORT|/smi/|/debug/\" tradingview/pine --glob '*.pine' && exit 1 || exit 0"

@@ -115,11 +115,12 @@ export function runAtCursor(input: {
   const timeframe = input.timeframe ?? input.candles[0]?.timeframe ?? '15m';
   const cursor = input.candles[input.cursorIndex];
   if (cursor === undefined || cursor.closeTime === undefined) throw new Error(`Missing cursor candle at ${input.cursorIndex}`);
+  const cursorMs = cursor.closeTime;
   return runSmartMoneyEngine({
     symbol: input.symbol ?? cursor.symbol,
-    cursorMs: cursor.closeTime,
+    cursorMs,
     candlesByTimeframe: { [timeframe]: input.candles.slice(0, input.cursorIndex + 1) },
-    ...(input.referenceLevels === undefined ? {} : { referenceLevels: input.referenceLevels }),
+    ...(input.referenceLevels === undefined ? {} : { referenceLevels: sliceReferencesAtCursor(input.referenceLevels, cursorMs) }),
     ...(input.config === undefined ? {} : { config: input.config }),
   });
 }
