@@ -3,11 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "./core/dist/index.js",
+  "types": "./core/dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./core/dist/index.d.ts",
+      "import": "./core/dist/index.js"
+    },
+    "./config": {
+      "types": "./core/dist/v2/smc-config.d.ts",
+      "import": "./core/dist/v2/smc-config.js"
+    }
+  },
   "workspaces": [
     "core"
   ],
   "scripts": {
     "build": "tsc -p core/tsconfig.build.json",
+    "prepare": "npm run build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "check:pine-boundary": "rg -n \"request\\.security\\(|request\\.security_lower_tf\\(|request\\.seed\\(|\\bhttp\\b|\\bfetch\\b|strategy\\(|strategy\\.entry|strategy\\.order|strategy\\.exit|strategy\\.close|BUY NOW|SELL NOW|ENTER LONG|ENTER SHORT|/smi/|/debug/\" tradingview/pine --glob '*.pine' && exit 1 || exit 0"
