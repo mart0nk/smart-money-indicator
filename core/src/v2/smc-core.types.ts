@@ -175,6 +175,9 @@ export type FvgAoi = BaseSmcAoi & {
 
 export type OrderBlockAoi = BaseSmcAoi & {
   aoiType: 'ORDER_BLOCK';
+  originBreakId: string;
+  originBreakType: 'LOCAL_CANDLE_BREAK' | 'SWING_BOS' | 'CHOCH';
+  /** @deprecated Use originBreakId. Current local-break detection does not imply swing BOS. */
   originBosId: string;
   displacementCandleTime: number;
   lifecycle: FvgLifecycleMetadata;

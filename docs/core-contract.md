@@ -24,4 +24,4 @@ All candles used by the core must be closed and must have finite positive OHLC p
 
 AOI availability is not a trading signal. The engine keeps weak and trap-risk FVGs in `aois` for auditability and emits quality facts such as `FVG_LOW_QUALITY`, `FVG_TOO_SMALL` and `FVG_TRAP_RISK` so consumers can filter them before using SMI evidence in setup scoring.
 
-Current FVG structure context uses a local candle break unless `breakType` is explicitly `SWING_BOS`. Consumers should not treat `LOCAL_CANDLE_BREAK` as a confirmed swing-structure BOS.
+Current FVG structure context and order-block origin metadata use a local candle break unless `breakType` / `originBreakType` is explicitly `SWING_BOS`. Consumers should not treat `LOCAL_CANDLE_BREAK` as a confirmed swing-structure BOS.

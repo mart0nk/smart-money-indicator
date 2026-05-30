@@ -32,7 +32,11 @@ describe('SMI core v2 business logic: order blocks', () => {
       sourceTime: origin.openTime,
       availableFrom: confirmation.closeTime,
       sourceTimeframe: '15m',
+      originBreakType: 'LOCAL_CANDLE_BREAK',
     });
+    expect(ob.originBreakId).toContain(':LOCAL_CANDLE_BREAK:');
+    expect(ob.originBreakId).not.toContain(':BOS:');
+    expect(ob.originBosId).toBe(ob.originBreakId);
     expect(output.facts.map((fact) => fact.factType)).toContain('ORDER_BLOCK_AVAILABLE');
     assertNoFutureEvidence(output);
   });

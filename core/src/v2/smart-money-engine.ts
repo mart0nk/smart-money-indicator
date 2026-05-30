@@ -647,11 +647,12 @@ function detectOrderBlockAois(
     if (!gradeAtLeast(quality.grade, config.orderBlock.minQualityGrade)) continue;
     const sourceTime = origin.openTime;
     const availableFrom = confirmation.closeTime!;
-    const originBosId = [symbol.toUpperCase(), timeframe, 'BOS', side, confirmation.closeTime].join(':');
+    const originBreakType = 'LOCAL_CANDLE_BREAK';
+    const originBreakId = [symbol.toUpperCase(), timeframe, originBreakType, side, confirmation.closeTime].join(':');
     const base: OrderBlockAoi = {
       aoiType: 'ORDER_BLOCK',
       zoneId: buildZoneId({ symbol, sourceTimeframe: timeframe, aoiType: 'ORDER_BLOCK', side, sourceCandleTime: sourceTime, aoiLow: bounds.low, aoiHigh: bounds.high }),
-      sourceId: buildSourceId({ symbol, sourceTimeframe: timeframe, sourceType: 'ORDER_BLOCK', sourceTime, provenanceId: originBosId }),
+      sourceId: buildSourceId({ symbol, sourceTimeframe: timeframe, sourceType: 'ORDER_BLOCK', sourceTime, provenanceId: originBreakId }),
       symbol: symbol.toUpperCase(),
       side,
       sourceTimeframe: timeframe,
@@ -666,7 +667,9 @@ function detectOrderBlockAois(
       mitigationPct: 0,
       reactionConfirmed: false,
       invalidated: false,
-      originBosId,
+      originBreakId,
+      originBreakType,
+      originBosId: originBreakId,
       displacementCandleTime: confirmation.openTime,
       lifecycle: baseLifecycle(),
       quality,
