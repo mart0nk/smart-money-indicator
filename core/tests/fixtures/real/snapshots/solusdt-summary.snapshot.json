@@ -21,9 +21,9 @@
     "PULLBACK_INTO_ORDER_BLOCK": 19,
     "ORDER_BLOCK_REACTION_CONFIRMED": 18,
     "FVG_FIRST_RETURN_CONFIRMED": 4,
-    "FVG_REACTION_CONFIRMED": 4,
+    "FVG_REACTION_CONFIRMED": 3,
     "IMBALANCE_PULLBACK_LOCATION_CONFIRMED": 4
   },
   "invalidatedCount": 132,
-  "reactionConfirmedCount": 22
+  "reactionConfirmedCount": 21
 }

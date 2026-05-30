@@ -201,53 +201,69 @@ export const defaultSmartMoneyRollingConfig: SmartMoneyRollingConfig = {
   },
 };
 
-export function resolveSmartMoneyConfig(input?: SmartMoneyConfigInput): SmartMoneyConfig {
+export const smartMoneyConfigProfiles: Record<string, SmartMoneyConfig> = {
+  [defaultSmartMoneyConfig.version]: defaultSmartMoneyConfig,
+  [primitiveResearchConfig.version]: primitiveResearchConfig,
+  [standardSmartMoneyConfig.version]: standardSmartMoneyConfig,
+  [strictCryptoIntradayConfig.version]: strictCryptoIntradayConfig,
+};
+
+export function resolveSmartMoneyConfig(input?: SmartMoneyConfigInput | SmartMoneyConfig['version']): SmartMoneyConfig {
+  if (input === undefined) return defaultSmartMoneyConfig;
+  if (typeof input === 'string') {
+    const profile = smartMoneyConfigProfiles[input];
+    if (profile === undefined) throw new Error(`Unknown SmartMoneyConfig profile: ${input}`);
+    return profile;
+  }
+  const base = input.version === undefined
+    ? defaultSmartMoneyConfig
+    : smartMoneyConfigProfiles[input.version] ?? defaultSmartMoneyConfig;
   return {
-    ...defaultSmartMoneyConfig,
+    ...base,
     ...input,
     fvg: {
-      ...defaultSmartMoneyConfig.fvg,
+      ...base.fvg,
       ...input?.fvg,
       quality: {
-        ...defaultSmartMoneyConfig.fvg.quality,
+        ...base.fvg.quality,
         ...input?.fvg?.quality,
         displacement: {
-          ...defaultSmartMoneyConfig.fvg.quality.displacement,
+          ...base.fvg.quality.displacement,
           ...input?.fvg?.quality?.displacement,
         },
         structure: {
-          ...defaultSmartMoneyConfig.fvg.quality.structure,
+          ...base.fvg.quality.structure,
           ...input?.fvg?.quality?.structure,
         },
         barriers: {
-          ...defaultSmartMoneyConfig.fvg.quality.barriers,
+          ...base.fvg.quality.barriers,
           ...input?.fvg?.quality?.barriers,
         },
       },
     },
     orderBlock: {
-      ...defaultSmartMoneyConfig.orderBlock,
+      ...base.orderBlock,
       ...input?.orderBlock,
       invalidation: {
-        ...defaultSmartMoneyConfig.orderBlock.invalidation,
+        ...base.orderBlock.invalidation,
         ...input?.orderBlock?.invalidation,
       },
     },
     sweeps: {
-      ...defaultSmartMoneyConfig.sweeps,
+      ...base.sweeps,
       ...input?.sweeps,
       liquidityLevel: {
-        ...defaultSmartMoneyConfig.sweeps.liquidityLevel,
+        ...base.sweeps.liquidityLevel,
         ...input?.sweeps?.liquidityLevel,
       },
       significance: {
-        ...defaultSmartMoneyConfig.sweeps.significance,
+        ...base.sweeps.significance,
         ...input?.sweeps?.significance,
       },
     },
-    reaction: { ...defaultSmartMoneyConfig.reaction, ...input?.reaction },
-    evidence: { ...defaultSmartMoneyConfig.evidence, ...input?.evidence },
-    safety: { ...defaultSmartMoneyConfig.safety, ...input?.safety },
+    reaction: { ...base.reaction, ...input?.reaction },
+    evidence: { ...base.evidence, ...input?.evidence },
+    safety: { ...base.safety, ...input?.safety },
   };
 }
 

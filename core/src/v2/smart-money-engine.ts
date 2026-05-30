@@ -50,7 +50,7 @@ const INTERVAL_MS: Record<SmcInputTimeframe, number> = {
 export function createSmartMoneyEngine(config?: SmartMoneyConfig['version'] | SmartMoneyEngineInput['config']): {
   run(input: SmartMoneyInput): SmartMoneySnapshot;
 } {
-  const resolvedConfig = typeof config === 'string' ? resolveSmartMoneyConfig({ version: config }) : resolveSmartMoneyConfig(config);
+  const resolvedConfig = resolveSmartMoneyConfig(config);
   return {
     run(input: SmartMoneyInput): SmartMoneySnapshot {
       const cursorMs = input.cursorTime ?? inferCursorMs(input.candlesByTimeframe);
@@ -111,7 +111,7 @@ export function linkSweepToZone(params: {
   if (config.evidence.rejectSideIncompatibleSweeps && !isSweepSideCompatible(params.zone.side, params.sweep.side)) {
     return reject('SIDE_INCOMPATIBLE', 'SWEEP_SIDE_INCOMPATIBLE');
   }
-  if (!isSweepNearZone(params.zone, params.sweep, config.evidence.maxSweepDistanceBps)) {
+  if (config.evidence.requireZoneScopedSweeps && !isSweepNearZone(params.zone, params.sweep, config.evidence.maxSweepDistanceBps)) {
     return reject('UNRELATED_PRICE_LEVEL', 'SWEEP_NOT_ZONE_RELATED');
   }
   return {
@@ -361,6 +361,7 @@ function detectFvgAois(
         candleTime: availableFrom,
         cursorMs: observedAt,
       });
+      if (!config.fvg.detectTinyGaps) continue;
     }
     const base: FvgAoi = {
       aoiType: 'FVG',
@@ -381,17 +382,11 @@ function detectFvgAois(
       reactionConfirmed: false,
       invalidated: false,
       sourceCandleTimes: [first.openTime, middle.openTime, confirming.openTime],
-      lifecycle: {
-        state: 'AVAILABLE',
-        isFresh: true,
-        touchCount: 0,
-        mitigationPct: 0,
-        terminal: false,
-      },
+      lifecycle: baseLifecycle(),
       quality,
-      eligibility: makeZoneEligibility(quality, 'AVAILABLE', false),
+      eligibility: makeZoneEligibility(quality, 'AVAILABLE', baseLifecycle(), false),
     };
-    aois.push(finalizeAoi(applyLifecycle(base, candles)));
+    aois.push(finalizeAoi(applyLifecycle(base, candles, config), config));
   }
   return aois;
 }
@@ -425,14 +420,14 @@ function analyzeFvgQuality(input: {
       ? 'WEAK'
       : 'STRONG';
 
-  const quality = scoreFvgQuality({
-    verdict,
-    displacement,
-    size,
-    structure,
-    nearbyBarriers,
-    flags,
-  }, 'AVAILABLE');
+	  const quality = scoreFvgQuality({
+	    verdict,
+	    displacement,
+	    size,
+	    structure,
+	    nearbyBarriers,
+	    flags,
+	  }, input.config, 'AVAILABLE');
   return {
     policyVersion: 'fvg-quality-v1',
     verdict,
@@ -499,7 +494,7 @@ function scoreFvgQuality(input: {
   structure: FvgStructureContext;
   nearbyBarriers: FvgNearbyBarrier[];
   flags: FvgQualityFlag[];
-}, state: FvgAoi['state']): ZoneQuality {
+}, config: SmartMoneyConfig, state: FvgAoi['state']): ZoneQuality {
   let score = 0;
   const reasons: string[] = [];
   const penalties: string[] = [];
@@ -510,7 +505,8 @@ function scoreFvgQuality(input: {
   } else {
     penalties.push('GAP_TOO_SMALL');
   }
-  if ((input.size.gapAtrMultiple ?? 0) >= 0.25) {
+  const minGapAtrForScore = config.fvg.quality.minGapAtrMultipleForAcceptable ?? 0.25;
+  if ((input.size.gapAtrMultiple ?? 0) >= minGapAtrForScore) {
     score += 15;
     reasons.push('GAP_SIZE_ATR_ACCEPTABLE');
   }
@@ -522,7 +518,7 @@ function scoreFvgQuality(input: {
   }
   if (input.structure.formedAfterBos) {
     score += 20;
-    reasons.push('BOS_CONTEXT_CONFIRMED');
+    reasons.push(input.structure.breakType === 'SWING_BOS' ? 'BOS_CONTEXT_CONFIRMED' : 'LOCAL_CANDLE_BREAK_CONTEXT');
   } else {
     penalties.push('NO_BOS_CONTEXT');
   }
@@ -555,11 +551,12 @@ function findFvgStructureContext(
     const bullishBos = side === 'BULLISH' && current.close > previous.high;
     const bearishBos = side === 'BEARISH' && current.close < previous.low;
     if (!bullishBos && !bearishBos) continue;
-    return {
-      formedAfterBos: true,
-      relatedStructureBreakId: [current.symbol.toUpperCase(), current.timeframe, 'BOS', side, current.closeTime].join(':'),
-      candlesAfterBreak: index - bosIndex,
-    };
+	    return {
+	      formedAfterBos: true,
+	      breakType: 'LOCAL_CANDLE_BREAK',
+	      relatedStructureBreakId: [current.symbol.toUpperCase(), current.timeframe, 'LOCAL_CANDLE_BREAK', side, current.closeTime].join(':'),
+	      candlesAfterBreak: index - bosIndex,
+	    };
   }
   return { formedAfterBos: false };
 }
@@ -647,6 +644,7 @@ function detectOrderBlockAois(
       ...(config.orderBlock.minOriginBodyAtr === undefined ? {} : { minOriginBodyAtr: config.orderBlock.minOriginBodyAtr }),
       ...(config.orderBlock.minDisplacementAtr === undefined ? {} : { minDisplacementAtr: config.orderBlock.minDisplacementAtr }),
     });
+    if (!gradeAtLeast(quality.grade, config.orderBlock.minQualityGrade)) continue;
     const sourceTime = origin.openTime;
     const availableFrom = confirmation.closeTime!;
     const originBosId = [symbol.toUpperCase(), timeframe, 'BOS', side, confirmation.closeTime].join(':');
@@ -670,17 +668,11 @@ function detectOrderBlockAois(
       invalidated: false,
       originBosId,
       displacementCandleTime: confirmation.openTime,
-      lifecycle: {
-        state: 'AVAILABLE',
-        isFresh: true,
-        touchCount: 0,
-        mitigationPct: 0,
-        terminal: false,
-      },
+      lifecycle: baseLifecycle(),
       quality,
-      eligibility: makeZoneEligibility(quality, 'AVAILABLE', false),
+      eligibility: makeZoneEligibility(quality, 'AVAILABLE', baseLifecycle(), false),
     };
-    aois.push(finalizeAoi(applyLifecycle(base, candles)));
+    aois.push(finalizeAoi(applyLifecycle(base, candles, config), config));
   }
   return dedupeBy(aois, (aoi) => aoi.zoneId);
 }
@@ -702,7 +694,7 @@ function chooseOrderBlockSide(input: {
   return undefined;
 }
 
-function applyLifecycle<T extends FvgAoi | OrderBlockAoi>(aoi: T, candles: Candle[]): T {
+function applyLifecycle<T extends FvgAoi | OrderBlockAoi>(aoi: T, candles: Candle[], config: SmartMoneyConfig): T {
   let next: T = aoi;
   let returned = false;
   let touchCount = aoi.lifecycle.touchCount;
@@ -711,7 +703,8 @@ function applyLifecycle<T extends FvgAoi | OrderBlockAoi>(aoi: T, candles: Candl
   let lastTouchedAt = aoi.lifecycle.lastTouchedAt;
   let fullyMitigatedAt = aoi.lifecycle.fullyMitigatedAt;
   let deepestMitigationPrice = aoi.lifecycle.deepestMitigationPrice;
-  for (const candle of candles) {
+  for (let candleIndex = 0; candleIndex < candles.length; candleIndex += 1) {
+    const candle = candles[candleIndex]!;
     if (candle.closeTime! <= aoi.availableFrom) continue;
     const invalidated = aoi.side === 'BULLISH' ? candle.close < aoi.aoiLow : candle.close > aoi.aoiHigh;
     if (invalidated) {
@@ -737,7 +730,12 @@ function applyLifecycle<T extends FvgAoi | OrderBlockAoi>(aoi: T, candles: Candl
     const mitigationPct = Math.max(next.mitigationPct, calculateMitigation(aoi, candle));
     if (mitigationPct >= 50) midpointTouchedAt ??= candle.closeTime!;
     if (mitigationPct >= 100) fullyMitigatedAt ??= candle.closeTime!;
-    const reaction = aoi.side === 'BULLISH' ? candle.close > aoi.aoiHigh : candle.close < aoi.aoiLow;
+    const reaction = evaluateZoneReaction({
+      zone: aoi,
+      candle,
+      atr: calculateAtr(candles, candleIndex, config.fvg.quality.atrPeriod),
+      config,
+    }).confirmed;
     if (reaction) {
       next = {
         ...next,
@@ -773,21 +771,55 @@ function withLifecycle<T extends FvgAoi | OrderBlockAoi>(aoi: T, lifecycle: FvgL
   return { ...aoi, lifecycle } as T;
 }
 
-function finalizeAoi<T extends FvgAoi | OrderBlockAoi>(aoi: T): T {
+function evaluateZoneReaction(input: {
+  zone: FvgAoi | OrderBlockAoi;
+  candle: Candle;
+  atr: number | undefined;
+  config: SmartMoneyConfig;
+}): { confirmed: boolean; closeAway: boolean; bodyAtr?: number; rangeAtr?: number } {
+  const closeAway = input.zone.side === 'BULLISH'
+    ? input.candle.close > input.zone.aoiHigh
+    : input.candle.close < input.zone.aoiLow;
+  const bodySize = Math.abs(input.candle.close - input.candle.open);
+  const rangeSize = input.candle.high - input.candle.low;
+  const bodyAtr = input.atr === undefined || input.atr <= 0 ? undefined : bodySize / input.atr;
+  const rangeAtr = input.atr === undefined || input.atr <= 0 ? undefined : rangeSize / input.atr;
+  const closeAwayPassed = !input.config.reaction.requireCloseAwayFromZone || closeAway;
+  const bodyPassed = bodyAtr === undefined || bodyAtr >= input.config.reaction.minReactionBodyAtr;
+  const rangePassed = rangeAtr === undefined || rangeAtr >= input.config.reaction.minReactionRangeAtr;
+  return {
+    confirmed: closeAwayPassed && bodyPassed && rangePassed,
+    closeAway,
+    ...(bodyAtr === undefined ? {} : { bodyAtr }),
+    ...(rangeAtr === undefined ? {} : { rangeAtr }),
+  };
+}
+
+function finalizeAoi<T extends FvgAoi | OrderBlockAoi>(aoi: T, config: SmartMoneyConfig): T {
   if (aoi.aoiType === 'FVG') {
     const quality = {
       ...aoi.quality,
-      ...scoreFvgQuality(aoi.quality, aoi.state),
+      ...scoreFvgQuality(aoi.quality, config, aoi.state),
     };
     return {
       ...aoi,
-      quality,
-      eligibility: makeZoneEligibility(quality, aoi.state, aoi.invalidated),
-    } as T;
-  }
+	      quality,
+	      eligibility: makeZoneEligibility(quality, aoi.state, aoi.lifecycle, aoi.invalidated),
+	    } as T;
+	  }
+	  return {
+	    ...aoi,
+	    eligibility: makeZoneEligibility(aoi.quality, aoi.state, aoi.lifecycle, aoi.invalidated),
+	  };
+	}
+
+function baseLifecycle(): FvgLifecycleMetadata {
   return {
-    ...aoi,
-    eligibility: makeZoneEligibility(aoi.quality, aoi.state, aoi.invalidated),
+    state: 'AVAILABLE',
+    isFresh: true,
+    touchCount: 0,
+    mitigationPct: 0,
+    terminal: false,
   };
 }
 
@@ -799,8 +831,19 @@ function toZoneLifecycleState(state: FvgAoi['state'], mitigationPct: number): Fv
   return 'AVAILABLE';
 }
 
-function makeZoneEligibility(quality: ZoneQuality, state: FvgAoi['state'], invalidated: boolean): ZoneEligibility {
-  const terminal = invalidated || state === 'INVALIDATED';
+function makeZoneEligibility(
+  quality: ZoneQuality,
+  state: FvgAoi['state'],
+  lifecycle: FvgLifecycleMetadata,
+  invalidated: boolean,
+): ZoneEligibility {
+  const terminal =
+    invalidated ||
+    state === 'INVALIDATED' ||
+    lifecycle.terminal ||
+    lifecycle.state === 'INVALIDATED' ||
+    lifecycle.state === 'MITIGATED' ||
+    lifecycle.state === 'EXPIRED';
   return {
     visibleOnChart: true,
     usableAsAoi: !terminal && quality.grade !== 'LOW',
@@ -905,7 +948,9 @@ function detectSweeps(
   if (!config.sweeps.enabled) return [];
   const sweeps: LiquiditySweepEvidence[] = [];
   for (const timeframe of config.sweepTimeframes) {
-    for (const candle of candles[timeframe] ?? []) {
+    const timeframeCandles = candles[timeframe] ?? [];
+    for (let candleIndex = 0; candleIndex < timeframeCandles.length; candleIndex += 1) {
+      const candle = timeframeCandles[candleIndex]!;
       for (const reference of input.referenceLevels ?? []) {
         if (reference.detectedAt > candle.closeTime! || !Number.isFinite(reference.price) || reference.price <= 0) continue;
         const sellSide = reference.side === 'SELL_SIDE_LIQUIDITY';
@@ -918,15 +963,19 @@ function detectSweeps(
         if (!pierced || !closeBack) continue;
         const extreme = sellSide ? candle.low : candle.high;
         const extensionBps = (Math.abs(extreme - reference.price) / reference.price) * 10_000;
-        if (extensionBps < config.sweeps.minWickExtensionBps) {
+        const atr = calculateAtr(timeframeCandles, candleIndex, config.fvg.quality.atrPeriod);
+        const extensionAtr = atr === undefined || atr <= 0 ? undefined : Math.abs(extreme - reference.price) / atr;
+        const atrPassed = config.sweeps.minWickExtensionAtr === undefined ||
+          (extensionAtr !== undefined && extensionAtr >= config.sweeps.minWickExtensionAtr);
+        if (extensionBps < config.sweeps.minWickExtensionBps || !atrPassed) {
           appendSweepRejection('SWEEP_REJECTED_TINY_WICK', input, timeframe, candle, reference, violations, facts);
           continue;
-	        }
-	        const side = sellSide ? 'SELL_SIDE_SWEEP' : 'BUY_SIDE_SWEEP';
-	        const availableFrom = candle.closeTime!;
-	        const expiresAt = availableFrom + config.sweeps.validForCandles * INTERVAL_MS[timeframe];
-	        const stale = input.cursorMs > expiresAt;
-	        const sweep: LiquiditySweepEvidence = {
+        }
+        const side = sellSide ? 'SELL_SIDE_SWEEP' : 'BUY_SIDE_SWEEP';
+        const availableFrom = candle.closeTime!;
+        const expiresAt = availableFrom + config.sweeps.validForCandles * INTERVAL_MS[timeframe];
+        const stale = input.cursorMs > expiresAt;
+        const sweep: LiquiditySweepEvidence = {
           sweepId: buildSweepId({ symbol: input.symbol, sourceTimeframe: timeframe, side, referenceId: reference.referenceId, availableFrom }),
           symbol: input.symbol.toUpperCase(),
           side,
@@ -938,12 +987,12 @@ function detectSweeps(
           sourceTime: reference.detectedAt,
           availableFrom,
           observedAt: input.cursorMs,
-	          recordedAtCursor: input.cursorMs,
-	          validForCandles: config.sweeps.validForCandles,
-	          expiresAt,
-	          stale,
-	          quality: scoreSweepQuality(extensionBps, stale),
-	        };
+          recordedAtCursor: input.cursorMs,
+          validForCandles: config.sweeps.validForCandles,
+          expiresAt,
+          stale,
+          quality: scoreSweepQuality(extensionBps, stale),
+        };
         sweeps.push(sweep);
         const detectedType = side === 'SELL_SIDE_SWEEP' ? 'SELL_SIDE_SWEEP_DETECTED' : 'BUY_SIDE_SWEEP_DETECTED';
         facts.push(sweepFact(sweep, detectedType));
@@ -1089,6 +1138,16 @@ function scoreSweepQuality(extensionBps: number, stale: boolean): ZoneQuality {
     penalties.push('SWEEP_STALE');
   }
   return qualityFromScore(score, reasons, penalties);
+}
+
+const GRADE_RANK: Record<ZoneQuality['grade'], number> = {
+  LOW: 0,
+  MEDIUM: 1,
+  HIGH: 2,
+};
+
+function gradeAtLeast(actual: ZoneQuality['grade'], required: ZoneQuality['grade']): boolean {
+  return GRADE_RANK[actual] >= GRADE_RANK[required];
 }
 
 function qualityFromScore(score: number, reasons: string[], penalties: string[]): ZoneQuality {

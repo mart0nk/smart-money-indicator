@@ -83,6 +83,7 @@ export type FvgSizeMetrics = {
 
 export type FvgStructureContext = {
   formedAfterBos: boolean;
+  breakType?: 'LOCAL_CANDLE_BREAK' | 'SWING_BOS';
   relatedStructureBreakId?: string;
   candlesAfterBreak?: number;
 };
