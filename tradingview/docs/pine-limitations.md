@@ -36,6 +36,17 @@ SMI events are confirmed on closed bars. Confirmed zones are not repainted. Form
 
 New zones are not eligible for touch, midpoint touch, reaction, or invalidation on the same bar where they are created.
 
+## Strict Visual Profile
+
+Pine v1 defaults are aligned toward the TypeScript strict crypto intraday profile for chart inspection:
+
+- FVGs require minimum gap size in ATR and bps.
+- Order-block-style zones use stricter displacement, shorter origin lookback, origin body filtering, and hybrid body/wick bounds.
+- Reactions require close-away behavior plus body/range ATR filters.
+- Liquidity sweeps require wick reclaim/rejection plus minimum wick extension in ATR and bps.
+
+These checks are visual approximations. Pine does not implement the full TypeScript lifecycle, profile resolver, scoring, or zone-scoped evidence linker.
+
 ## Sweep Dedupe
 
 One confirmed swing high or low can emit one sweep marker. The swept flag resets only when a new confirmed swing is created.
