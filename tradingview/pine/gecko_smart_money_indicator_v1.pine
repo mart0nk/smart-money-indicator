@@ -198,7 +198,7 @@ f_updateZones(SmiZone[] zones) =>
 f_findBullObOffset(int maxBack) =>
     int found = na
     for i = 1 to maxBack
-        originBodyPass = not useAtrFilter or math.abs(close[i] - open[i]) >= atr * minObOriginBodyAtr
+        originBodyPass = not useAtrFilter or math.abs(close[i] - open[i]) >= atr[i] * minObOriginBodyAtr
         if na(found) and close[i] < open[i] and originBodyPass
             found := i
     found
@@ -206,7 +206,7 @@ f_findBullObOffset(int maxBack) =>
 f_findBearObOffset(int maxBack) =>
     int found = na
     for i = 1 to maxBack
-        originBodyPass = not useAtrFilter or math.abs(close[i] - open[i]) >= atr * minObOriginBodyAtr
+        originBodyPass = not useAtrFilter or math.abs(close[i] - open[i]) >= atr[i] * minObOriginBodyAtr
         if na(found) and close[i] > open[i] and originBodyPass
             found := i
     found
@@ -282,8 +282,9 @@ if bearFvg
     f_addZone(fvgZones, maxFvgZones, "FVG", false, bar_index - 2, high, low[2])
 
 // Order block detection
-bullObOffset = bosBull and math.abs(close - open) >= atr * minObDisplacementAtr ? f_findBullObOffset(obLookback) : na
-bearObOffset = bosBear and math.abs(close - open) >= atr * minObDisplacementAtr ? f_findBearObOffset(obLookback) : na
+obDisplacementPass = not useAtrFilter or math.abs(close - open) >= atr * minObDisplacementAtr
+bullObOffset = bosBull and obDisplacementPass ? f_findBullObOffset(obLookback) : na
+bearObOffset = bosBear and obDisplacementPass ? f_findBearObOffset(obLookback) : na
 
 if showOb and not na(bullObOffset)
     obLow = f_hybridObLow(bullObOffset)
