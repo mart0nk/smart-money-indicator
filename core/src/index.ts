@@ -1,19 +1,33 @@
 export { calculateMitigationPenalty, isMitigationInvalidated } from './aoi/mitigation-scoring.js';
 export { hasSufficientReactionEvidence, sweepStrengthFromEvidence } from './aoi/reaction-evidence-builder.js';
-export { detectLiquiditySweep, scoreLiquiditySweep, sweepStrengthFromScore } from './liquidity/liquidity-sweep-detector.js';
+export {
+  detectLiquiditySweep,
+  detectLiquiditySweep as detectLiquiditySweeps,
+  scoreLiquiditySweep,
+  sweepStrengthFromScore,
+} from './liquidity/liquidity-sweep-detector.js';
 export { detectSmartMoneyBos, detectSmartMoneyBos as detectBos } from './structure/bos-detector.js';
 export { detectSmartMoneySwingPoints, detectSmartMoneySwingPoints as detectSwingPoints } from './structure/swing-detector.js';
 export { isSmartMoneySwingUsableAt, isSmartMoneySwingUsableAt as isSwingUsableAt } from './structure/swing-point.types.js';
 export { scoreVolumeEvidence } from './quality/volume-evidence.js';
 export { detectFvgZones } from './zones/fvg-detector.js';
-export { detectOrderBlocks } from './zones/order-block-detector.js';
-export { runSmartMoneyEngine } from './v2/smart-money-engine.js';
+export { detectOrderBlocks, detectOrderBlocks as detectOrderBlockZones } from './zones/order-block-detector.js';
+export {
+  createSmartMoneyEngine,
+  linkSweepToZone,
+  runSmartMoneyEngine,
+  toSmartMoneySnapshot,
+  validateCandles,
+} from './v2/smart-money-engine.js';
 export { createSmartMoneyRollingEngine } from './v2/smart-money-rolling-engine.js';
 export {
   defaultSmartMoneyConfig,
   defaultSmartMoneyRollingConfig,
+  primitiveResearchConfig,
   resolveSmartMoneyConfig,
   resolveRollingConfig,
+  standardSmartMoneyConfig,
+  strictCryptoIntradayConfig,
 } from './v2/smc-config.js';
 export {
   buildZoneId,
@@ -63,6 +77,7 @@ export type {
   FvgAoi,
   OrderBlockAoi,
   LiquiditySweepEvidence,
+  LiquiditySweep,
   LiquiditySweepEvidence as CanonicalLiquiditySweepEvidence,
   SmcAoiFactType,
   SmcAoiFact,
@@ -75,10 +90,21 @@ export type {
   SmartMoneyConfigInput,
   SmartMoneyEngineInput,
   SmartMoneyEngineOutput,
+  SmartMoneyInput,
   SmartMoneyRollingConfig,
   SmartMoneyRollingUpdate,
+  SmartMoneySnapshot,
   SmartMoneySnapshotInput,
+  SmartMoneyZone,
+  FairValueGapZone,
+  OrderBlockZone,
   SmartMoneyBufferDiagnostics,
   SmartMoneyResetScope,
   SmartMoneyRollingEngine,
+  ZoneEligibility,
+  ZoneEvidenceLink,
+  ZoneEvidenceLinkRelation,
+  ZoneLifecycleState,
+  ZoneQuality,
+  ZoneQualityGrade,
 } from './v2/smc-core.types.js';

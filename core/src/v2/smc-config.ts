@@ -7,6 +7,8 @@ export const defaultSmartMoneyConfig: SmartMoneyConfig = {
   forbiddenSourceZoneTimeframes: ['5m', '3m', '1m'],
   strictMode: true,
   fvg: {
+    enabled: true,
+    detectTinyGaps: true,
     minGapBps: 1,
     quality: {
       atrPeriod: 14,
@@ -26,14 +28,159 @@ export const defaultSmartMoneyConfig: SmartMoneyConfig = {
     },
   },
   orderBlock: {
+    enabled: true,
     requireBos: true,
     requireConfirmedBos: true,
+    allowChoch: false,
     requireDisplacement: true,
+    originPolicy: 'LAST_OPPOSITE_BEFORE_BOS',
+    maxCandlesBackFromBos: 5,
     boundsPolicy: 'WICK',
+    minQualityGrade: 'LOW',
+    invalidation: {
+      mode: 'CLOSE_THROUGH',
+      bufferBps: 0,
+    },
   },
   sweeps: {
+    enabled: true,
     validForCandles: 12,
     minWickExtensionBps: 1,
+    requireCloseReclaim: true,
+    liquidityLevel: {
+      swingLeft: 2,
+      swingRight: 2,
+      minTouchesForEqualHighLow: 2,
+      equalLevelToleranceBps: 5,
+    },
+    significance: {
+      usePivotDepth: true,
+      minSignificance: 'LOW',
+    },
+  },
+  reaction: {
+    requireCloseAwayFromZone: true,
+    minReactionBodyAtr: 0.25,
+    minReactionRangeAtr: 0.4,
+    requireNoInvalidationAfterTouch: true,
+  },
+  evidence: {
+    requireZoneScopedSweeps: true,
+    maxSweepDistanceBps: 20,
+    rejectSideIncompatibleSweeps: true,
+  },
+  safety: {
+    requireClosedCandlesOnly: true,
+    requireAvailableFrom: true,
+    rejectFutureData: true,
+  },
+};
+
+export const primitiveResearchConfig: SmartMoneyConfig = {
+  ...defaultSmartMoneyConfig,
+  version: 'smi-config-v2-primitive-research',
+  fvg: {
+    ...defaultSmartMoneyConfig.fvg,
+    detectTinyGaps: true,
+    minGapBps: 1,
+    quality: {
+      ...defaultSmartMoneyConfig.fvg.quality,
+      minGapBpsForAcceptable: 1,
+    },
+  },
+  orderBlock: {
+    ...defaultSmartMoneyConfig.orderBlock,
+    boundsPolicy: 'WICK',
+    minQualityGrade: 'LOW',
+  },
+  sweeps: {
+    ...defaultSmartMoneyConfig.sweeps,
+    minWickExtensionBps: 1,
+    validForCandles: 12,
+    significance: {
+      ...defaultSmartMoneyConfig.sweeps.significance,
+      minSignificance: 'LOW',
+    },
+  },
+};
+
+export const standardSmartMoneyConfig: SmartMoneyConfig = {
+  ...defaultSmartMoneyConfig,
+  version: 'smi-config-v2-standard',
+  fvg: {
+    ...defaultSmartMoneyConfig.fvg,
+    detectTinyGaps: false,
+    minGapBps: 3,
+    quality: {
+      ...defaultSmartMoneyConfig.fvg.quality,
+      minGapBpsForAcceptable: 3,
+      minGapAtrMultipleForAcceptable: 0.15,
+      displacement: {
+        ...defaultSmartMoneyConfig.fvg.quality.displacement,
+        minBodyToRangeRatio: 0.6,
+      },
+    },
+  },
+  orderBlock: {
+    ...defaultSmartMoneyConfig.orderBlock,
+    minDisplacementAtr: 0.5,
+    maxCandlesBackFromBos: 3,
+    boundsPolicy: 'HYBRID',
+    minOriginBodyAtr: 0.15,
+    minQualityGrade: 'MEDIUM',
+  },
+  sweeps: {
+    ...defaultSmartMoneyConfig.sweeps,
+    minWickExtensionBps: 3,
+    minWickExtensionAtr: 0.05,
+    validForCandles: 8,
+    significance: {
+      ...defaultSmartMoneyConfig.sweeps.significance,
+      minSignificance: 'MEDIUM',
+    },
+  },
+};
+
+export const strictCryptoIntradayConfig: SmartMoneyConfig = {
+  ...standardSmartMoneyConfig,
+  version: 'smi-config-v2-strict-crypto-intraday',
+  fvg: {
+    ...standardSmartMoneyConfig.fvg,
+    detectTinyGaps: false,
+    minGapBps: 5,
+    quality: {
+      ...standardSmartMoneyConfig.fvg.quality,
+      minGapBpsForAcceptable: 5,
+      minGapAtrMultipleForAcceptable: 0.25,
+      displacement: {
+        ...standardSmartMoneyConfig.fvg.quality.displacement,
+        minRangeAtrMultiple: 1.2,
+        bullishMinCloseLocationPct: 0.65,
+        bearishMaxCloseLocationPct: 0.35,
+      },
+    },
+  },
+  orderBlock: {
+    ...standardSmartMoneyConfig.orderBlock,
+    allowChoch: true,
+    minDisplacementAtr: 0.75,
+    boundsPolicy: 'HYBRID',
+    minOriginBodyAtr: 0.25,
+    minQualityGrade: 'MEDIUM',
+    invalidation: {
+      mode: 'CLOSE_THROUGH',
+      bufferBps: 2,
+    },
+  },
+  sweeps: {
+    ...standardSmartMoneyConfig.sweeps,
+    minWickExtensionBps: 3,
+    minWickExtensionAtr: 0.1,
+    validForCandles: 8,
+    significance: {
+      ...standardSmartMoneyConfig.sweeps.significance,
+      minSignificance: 'MEDIUM',
+    },
   },
 };
 
@@ -78,8 +225,29 @@ export function resolveSmartMoneyConfig(input?: SmartMoneyConfigInput): SmartMon
         },
       },
     },
-    orderBlock: { ...defaultSmartMoneyConfig.orderBlock, ...input?.orderBlock },
-    sweeps: { ...defaultSmartMoneyConfig.sweeps, ...input?.sweeps },
+    orderBlock: {
+      ...defaultSmartMoneyConfig.orderBlock,
+      ...input?.orderBlock,
+      invalidation: {
+        ...defaultSmartMoneyConfig.orderBlock.invalidation,
+        ...input?.orderBlock?.invalidation,
+      },
+    },
+    sweeps: {
+      ...defaultSmartMoneyConfig.sweeps,
+      ...input?.sweeps,
+      liquidityLevel: {
+        ...defaultSmartMoneyConfig.sweeps.liquidityLevel,
+        ...input?.sweeps?.liquidityLevel,
+      },
+      significance: {
+        ...defaultSmartMoneyConfig.sweeps.significance,
+        ...input?.sweeps?.significance,
+      },
+    },
+    reaction: { ...defaultSmartMoneyConfig.reaction, ...input?.reaction },
+    evidence: { ...defaultSmartMoneyConfig.evidence, ...input?.evidence },
+    safety: { ...defaultSmartMoneyConfig.safety, ...input?.safety },
   };
 }
 

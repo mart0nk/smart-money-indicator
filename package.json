@@ -1,8 +1,8 @@
 {
   "name": "smart-money-indicator",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.2.0",
   "type": "module",
+  "sideEffects": false,
   "main": "./core/dist/index.js",
   "types": "./core/dist/index.d.ts",
   "exports": {
@@ -13,8 +13,23 @@
     "./config": {
       "types": "./core/dist/v2/smc-config.d.ts",
       "import": "./core/dist/v2/smc-config.js"
+    },
+    "./profiles": {
+      "types": "./core/dist/v2/smc-config.d.ts",
+      "import": "./core/dist/v2/smc-config.js"
+    },
+    "./types": {
+      "types": "./core/dist/v2/smc-core.types.d.ts",
+      "import": "./core/dist/v2/smc-core.types.js"
+    },
+    "./testing": {
+      "types": "./core/dist/index.d.ts",
+      "import": "./core/dist/index.js"
     }
   },
+  "files": [
+    "core/dist"
+  ],
   "workspaces": [
     "core"
   ],

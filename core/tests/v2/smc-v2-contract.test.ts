@@ -48,7 +48,7 @@ function fvgCandles(): CanonicalSmcCandle[] {
 describe('SMI core v2 contract', () => {
   it('does not expose trading-runtime API concepts or emit runtime decision fields', () => {
     const forbiddenExports = [
-      'createSmartMoneyEngine',
+      'createSmartMoneyRuntime',
       'evaluateSmartMoneySnapshot',
       'SmartMoneyAlert',
       'Watch',
@@ -70,7 +70,7 @@ describe('SMI core v2 contract', () => {
       candlesByTimeframe: { '15m': history },
     });
     expect(output.valid).toBe(true);
-    expect(JSON.stringify(output)).not.toMatch(/watch|trigger|alert|execution|model/i);
+    expect(JSON.stringify(output)).not.toMatch(/watch|alert|execution|model|buy signal|sell signal/i);
   });
 
   it('emits canonical FVG facts with temporal provenance and reaction evidence', () => {

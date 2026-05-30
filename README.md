@@ -22,9 +22,16 @@ npm run smoke:exports
 The root package is the public consumer entrypoint:
 
 ```ts
-import { runSmartMoneyEngine } from 'smart-money-indicator';
+import {
+  createSmartMoneyEngine,
+  runSmartMoneyEngine,
+  strictCryptoIntradayConfig,
+} from 'smart-money-indicator';
 import { defaultSmartMoneyConfig } from 'smart-money-indicator/config';
+import type { Candle, SmartMoneySnapshot } from 'smart-money-indicator/types';
 ```
+
+`smart-money-indicator/profiles` exposes `primitiveResearchConfig`, `standardSmartMoneyConfig` and `strictCryptoIntradayConfig`.
 
 Packaging migration:
 

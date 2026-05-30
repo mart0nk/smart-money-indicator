@@ -19,3 +19,7 @@ The core has no HTTP, exchange, persistence or trading-decision dependencies.
 - `strictMode: false`: the engine may return partial output from valid normalized candles, but `valid` remains `false`. Forbidden source-zone timeframes are always filtered and never create FVG/OB zones.
 
 All candles used by the core must be closed and must have finite positive OHLC prices. Zero or negative prices are malformed input.
+
+## Quality Semantics
+
+AOI availability is not a trading signal. The engine keeps weak and trap-risk FVGs in `aois` for auditability and emits quality facts such as `FVG_LOW_QUALITY`, `FVG_TOO_SMALL` and `FVG_TRAP_RISK` so consumers can filter them before using SMI evidence in setup scoring.
