@@ -84,9 +84,16 @@ npm run smoke:exports
 Consumers should import from the root package:
 
 ```ts
-import { runSmartMoneyEngine } from 'smart-money-indicator';
+import {
+  createSmartMoneyEngine,
+  runSmartMoneyEngine,
+  strictCryptoIntradayConfig,
+} from 'smart-money-indicator';
 import { defaultSmartMoneyConfig } from 'smart-money-indicator/config';
+import type { Candle, SmartMoneySnapshot } from 'smart-money-indicator/types';
 ```
+
+`smart-money-indicator/profiles` exposes `primitiveResearchConfig`, `standardSmartMoneyConfig` and `strictCryptoIntradayConfig`.
 
 The root package is the public consumer entrypoint. Internal workspace package names should not be treated as the preferred public API.
 
@@ -98,14 +105,16 @@ import { defaultSmartMoneyConfig } from 'smart-money-indicator/config';
 
 const snapshot = runSmartMoneyEngine({
   symbol: 'BTCUSDT',
-  timeframe: '5m',
-  candles,
+  cursorMs,
+  candlesByTimeframe: {
+    '15m': candles,
+  },
   config: defaultSmartMoneyConfig,
 });
 
-console.log(snapshot.zones);
+console.log(snapshot.aois);
 console.log(snapshot.sweeps);
-console.log(snapshot.warnings);
+console.log(snapshot.violations);
 ```
 
 The exact output shape is structured and typed so downstream systems can reason about zones, lifecycle state, evidence, and diagnostics without parsing chart annotations.
@@ -132,8 +141,10 @@ for (let cursor = minBars; cursor < candles.length; cursor++) {
 
   const snapshot = runSmartMoneyEngine({
     symbol: 'BTCUSDT',
-    timeframe: '5m',
-    candles: visibleCandles,
+    cursorMs: visibleCandles.at(-1)!.closeTime!,
+    candlesByTimeframe: {
+      '15m': visibleCandles,
+    },
     config: defaultSmartMoneyConfig,
   });
 
@@ -153,15 +164,15 @@ The rolling engine is still local and deterministic. It does not connect to exch
 import { createSmartMoneyRollingEngine } from 'smart-money-indicator';
 import { defaultSmartMoneyConfig } from 'smart-money-indicator/config';
 
-const engine = createSmartMoneyRollingEngine({
+const engine = createSmartMoneyRollingEngine(defaultSmartMoneyConfig);
+
+const snapshot = engine.update({
   symbol: 'BTCUSDT',
-  timeframe: '5m',
-  config: defaultSmartMoneyConfig,
+  cursorMs,
+  closedCandlesByTimeframe: {
+    '15m': [candle],
+  },
 });
-
-engine.pushClosedCandle(candle);
-
-const snapshot = engine.evaluate();
 ```
 
 ## Data contract

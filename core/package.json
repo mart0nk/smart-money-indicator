@@ -12,6 +12,18 @@
     "./config": {
       "types": "./dist/v2/smc-config.d.ts",
       "import": "./dist/v2/smc-config.js"
+    },
+    "./profiles": {
+      "types": "./dist/v2/smc-config.d.ts",
+      "import": "./dist/v2/smc-config.js"
+    },
+    "./types": {
+      "types": "./dist/v2/smc-core.types.d.ts",
+      "import": "./dist/v2/smc-core.types.js"
+    },
+    "./testing": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   }
 }

@@ -10,7 +10,7 @@ It is not a trading bot. It does not emit trading instructions, create watches, 
 
 ## TradingView Delivery Target
 
-`packages/smart-money-indicator/tradingview` contains a standalone TradingView Pine Script artifact.
+`tradingview/` contains a standalone TradingView Pine Script artifact.
 
 The Pine script is a current-chart-timeframe visual overlay. It does not import the TypeScript core and does not call external services.
 

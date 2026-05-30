@@ -53,6 +53,7 @@ export type SmcAoiState =
   | 'INVALIDATED';
 
 export type FvgQualityVerdict = 'STRONG' | 'ACCEPTABLE' | 'WEAK' | 'TRAP_RISK';
+export type ZoneQualityGrade = 'LOW' | 'MEDIUM' | 'HIGH';
 
 export type FvgQualityFlag =
   | 'CREATED_WITH_DISPLACEMENT'
@@ -82,6 +83,7 @@ export type FvgSizeMetrics = {
 
 export type FvgStructureContext = {
   formedAfterBos: boolean;
+  breakType?: 'LOCAL_CANDLE_BREAK' | 'SWING_BOS';
   relatedStructureBreakId?: string;
   candlesAfterBreak?: number;
 };
@@ -97,6 +99,10 @@ export type FvgNearbyBarrier = {
 export type FvgQualityAssessment = {
   policyVersion: 'fvg-quality-v1';
   verdict: FvgQualityVerdict;
+  score: number;
+  grade: ZoneQualityGrade;
+  reasons: string[];
+  penalties: string[];
   displacement: FvgDisplacementMetrics;
   size: FvgSizeMetrics;
   structure: FvgStructureContext;
@@ -105,11 +111,39 @@ export type FvgQualityAssessment = {
 };
 
 export type FvgLifecycleMetadata = {
+  state: ZoneLifecycleState;
   isFresh: boolean;
   touchCount: number;
   firstTouchedAt?: number;
+  midpointTouchedAt?: number;
   lastTouchedAt?: number;
+  fullyMitigatedAt?: number;
   deepestMitigationPrice?: number;
+  invalidatedAt?: number;
+  expiredAt?: number;
+  mitigationPct: number;
+  terminal: boolean;
+};
+
+export type ZoneLifecycleState =
+  | 'AVAILABLE'
+  | 'FIRST_RETURN'
+  | 'PARTIALLY_MITIGATED'
+  | 'MITIGATED'
+  | 'INVALIDATED'
+  | 'EXPIRED';
+
+export type ZoneQuality = {
+  score: number;
+  grade: ZoneQualityGrade;
+  reasons: string[];
+  penalties: string[];
+};
+
+export type ZoneEligibility = {
+  visibleOnChart: boolean;
+  usableAsAoi: boolean;
+  usableAsTriggerContext: boolean;
 };
 
 export type BaseSmcAoi = TemporalProvenance & {
@@ -128,6 +162,8 @@ export type BaseSmcAoi = TemporalProvenance & {
   returnedAt?: number;
   reactionConfirmedAt?: number;
   invalidatedAt?: number;
+  recordedAtCursor: number;
+  eligibility: ZoneEligibility;
 };
 
 export type FvgAoi = BaseSmcAoi & {
@@ -139,8 +175,13 @@ export type FvgAoi = BaseSmcAoi & {
 
 export type OrderBlockAoi = BaseSmcAoi & {
   aoiType: 'ORDER_BLOCK';
+  originBreakId: string;
+  originBreakType: 'LOCAL_CANDLE_BREAK' | 'SWING_BOS' | 'CHOCH';
+  /** @deprecated Use originBreakId. Current local-break detection does not imply swing BOS. */
   originBosId: string;
   displacementCandleTime: number;
+  lifecycle: FvgLifecycleMetadata;
+  quality: ZoneQuality;
 };
 
 export type LiquiditySweepEvidence = TemporalProvenance & {
@@ -155,6 +196,26 @@ export type LiquiditySweepEvidence = TemporalProvenance & {
   validForCandles: number;
   expiresAt: number;
   stale: boolean;
+  recordedAtCursor: number;
+  quality: ZoneQuality;
+};
+
+export type ZoneEvidenceLinkRelation =
+  | 'SIDE_COMPATIBLE'
+  | 'SIDE_INCOMPATIBLE'
+  | 'NEAR_ZONE'
+  | 'STALE'
+  | 'AFTER_TRIGGER'
+  | 'UNRELATED_PRICE_LEVEL';
+
+export type ZoneEvidenceLink = {
+  zoneId: string;
+  evidenceId: string;
+  evidenceType: 'SWEEP' | 'BOS' | 'CHOCH' | 'REACTION' | 'MITIGATION';
+  relation: ZoneEvidenceLinkRelation;
+  score: number;
+  accepted: boolean;
+  reasons: string[];
 };
 
 export type SmcAoiFactType =
@@ -248,6 +309,8 @@ export type SmartMoneyConfig = {
   forbiddenSourceZoneTimeframes: Array<'5m' | '3m' | '1m'>;
   strictMode: boolean;
   fvg: {
+    enabled: boolean;
+    detectTinyGaps: boolean;
     minGapBps: number;
     quality: {
       atrPeriod: number;
@@ -268,14 +331,54 @@ export type SmartMoneyConfig = {
     };
   };
   orderBlock: {
+    enabled: boolean;
     requireBos: boolean;
     requireConfirmedBos: boolean;
+    allowChoch: boolean;
     requireDisplacement: boolean;
-    boundsPolicy: 'WICK' | 'BODY' | 'HYBRID';
+    minDisplacementAtr?: number;
+    originPolicy: 'LAST_OPPOSITE_BEFORE_BOS' | 'EXTREME_CANDLE_BEFORE_BOS' | 'HIGHEST_VOLUME_OPPOSITE_BEFORE_BOS';
+    maxCandlesBackFromBos: number;
+    boundsPolicy: 'WICK' | 'BODY' | 'HYBRID' | 'BODY_TO_WICK' | 'CE';
+    minOriginBodyAtr?: number;
+    minQualityGrade: ZoneQualityGrade;
+    invalidation: {
+      mode: 'WICK_THROUGH' | 'CLOSE_THROUGH';
+      bufferBps: number;
+    };
   };
   sweeps: {
+    enabled: boolean;
     validForCandles: number;
     minWickExtensionBps: number;
+    minWickExtensionAtr?: number;
+    requireCloseReclaim: boolean;
+    liquidityLevel: {
+      swingLeft: number;
+      swingRight: number;
+      minTouchesForEqualHighLow: number;
+      equalLevelToleranceBps: number;
+    };
+    significance: {
+      usePivotDepth: boolean;
+      minSignificance: ZoneQualityGrade;
+    };
+  };
+  reaction: {
+    requireCloseAwayFromZone: boolean;
+    minReactionBodyAtr: number;
+    minReactionRangeAtr: number;
+    requireNoInvalidationAfterTouch: boolean;
+  };
+  evidence: {
+    requireZoneScopedSweeps: boolean;
+    maxSweepDistanceBps: number;
+    rejectSideIncompatibleSweeps: boolean;
+  };
+  safety: {
+    requireClosedCandlesOnly: boolean;
+    requireAvailableFrom: boolean;
+    rejectFutureData: boolean;
   };
 };
 
@@ -286,6 +389,8 @@ export type SmartMoneyConfigInput = {
   forbiddenSourceZoneTimeframes?: Array<'5m' | '3m' | '1m'>;
   strictMode?: boolean;
   fvg?: {
+    enabled?: boolean;
+    detectTinyGaps?: boolean;
     minGapBps?: number;
     quality?: {
       atrPeriod?: number;
@@ -305,8 +410,16 @@ export type SmartMoneyConfigInput = {
       };
     };
   };
-  orderBlock?: Partial<SmartMoneyConfig['orderBlock']>;
-  sweeps?: Partial<SmartMoneyConfig['sweeps']>;
+  orderBlock?: Partial<Omit<SmartMoneyConfig['orderBlock'], 'invalidation'>> & {
+    invalidation?: Partial<SmartMoneyConfig['orderBlock']['invalidation']>;
+  };
+  sweeps?: Partial<Omit<SmartMoneyConfig['sweeps'], 'liquidityLevel' | 'significance'>> & {
+    liquidityLevel?: Partial<SmartMoneyConfig['sweeps']['liquidityLevel']>;
+    significance?: Partial<SmartMoneyConfig['sweeps']['significance']>;
+  };
+  reaction?: Partial<SmartMoneyConfig['reaction']>;
+  evidence?: Partial<SmartMoneyConfig['evidence']>;
+  safety?: Partial<SmartMoneyConfig['safety']>;
 };
 
 export type SmartMoneyEngineInput = {
@@ -330,6 +443,26 @@ export type SmartMoneyEngineOutput = {
   events: SmcLifecycleEvent[];
   violations: SmcEngineViolation[];
 };
+
+export type SmartMoneyInput = Omit<SmartMoneyEngineInput, 'cursorMs'> & {
+  cursorTime?: number;
+};
+
+export type SmartMoneySnapshot = SmartMoneyEngineOutput & {
+  schemaVersion: 'smi.snapshot.v1';
+  apiVersion: string;
+  cursorTime: number;
+  zones: Array<FvgAoi | OrderBlockAoi>;
+  diagnostics: {
+    valid: boolean;
+    violations: SmcEngineViolation[];
+  };
+};
+
+export type SmartMoneyZone = FvgAoi | OrderBlockAoi;
+export type FairValueGapZone = FvgAoi;
+export type OrderBlockZone = OrderBlockAoi;
+export type LiquiditySweep = LiquiditySweepEvidence;
 
 export type SmartMoneyRollingConfig = SmartMoneyConfig & {
   bufferSizes: {
