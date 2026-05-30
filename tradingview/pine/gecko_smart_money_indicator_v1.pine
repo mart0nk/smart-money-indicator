@@ -1,8 +1,9 @@
 //@version=6
 indicator("Gecko Smart Money Indicator v1", overlay = true, max_boxes_count = 200, max_lines_count = 200, max_labels_count = 200)
 
-// Gecko SMI Pine v1 is a standalone current-chart-timeframe overlay.
+// Gecko SMI Pine v1 is a standalone current-chart-timeframe visual overlay.
 // It is context-only: no entries, no sizing, no orders, no execution.
+// Pine is not the TypeScript engine source of truth; strict settings are visual approximations.
 
 // Inputs
 displayMode = input.string("Clean", "Display mode", options = ["Clean", "Normal", "Debug"])
@@ -25,12 +26,19 @@ maxLabels = input.int(80, "Max labels", minval = 10, maxval = 200)
 
 useAtrFilter = input.bool(true, "Use ATR filter")
 atrLen = input.int(14, "ATR length", minval = 1)
-minFvgAtr = input.float(0.15, "Min FVG size as ATR", minval = 0.0, step = 0.05)
+minFvgAtr = input.float(0.25, "Min FVG size as ATR", minval = 0.0, step = 0.05)
+minFvgBps = input.float(5.0, "Min FVG size in bps", minval = 0.0, step = 0.5)
 requireImpulseCandle = input.bool(true, "Require impulse candle for FVG")
-minObDisplacementAtr = input.float(0.25, "Min OB displacement as ATR", minval = 0.0, step = 0.05)
-obLookback = input.int(5, "OB origin lookback", minval = 1, maxval = 20)
+minDisplacementCloseLocation = input.float(0.65, "Min displacement close location", minval = 0.0, maxval = 1.0, step = 0.05)
+minObDisplacementAtr = input.float(0.75, "Min OB displacement as ATR", minval = 0.0, step = 0.05)
+minObOriginBodyAtr = input.float(0.25, "Min OB origin body as ATR", minval = 0.0, step = 0.05)
+obLookback = input.int(3, "OB origin lookback", minval = 1, maxval = 20)
 reactionMaxBars = input.int(5, "Reaction max bars after touch", minval = 1, maxval = 50)
-reactionMode = input.string("Close beyond midpoint", "Reaction mode", options = ["Close beyond midpoint", "Close outside zone"])
+reactionMode = input.string("Close outside zone", "Reaction mode", options = ["Close beyond midpoint", "Close outside zone"])
+minReactionBodyAtr = input.float(0.25, "Min reaction body as ATR", minval = 0.0, step = 0.05)
+minReactionRangeAtr = input.float(0.4, "Min reaction range as ATR", minval = 0.0, step = 0.05)
+minSweepWickAtr = input.float(0.1, "Min sweep wick extension as ATR", minval = 0.0, step = 0.05)
+minSweepWickBps = input.float(3.0, "Min sweep wick extension in bps", minval = 0.0, step = 0.5)
 liquidityLineMode = input.string("Active", "Liquidity line mode", options = ["Active", "Historical"])
 
 atr = ta.atr(atrLen)
@@ -122,7 +130,7 @@ f_addZone(SmiZone[] zones, int maxCount, string kind, bool bull, int leftBar, fl
     zoneBox = box.new(left = leftBar, top = zoneHigh, right = bar_index, bottom = zoneLow, bgcolor = color.new(zoneColor, 86), border_color = color.new(zoneColor, 35))
     midpoint = (zoneLow + zoneHigh) / 2.0
     midpointLine = showMidpoints ? line.new(x1 = leftBar, y1 = midpoint, x2 = bar_index, y2 = midpoint, color = color.new(color.gray, 35), style = line.style_dotted) : na
-    zoneLabel = effectiveShowZoneStatusLabels ? label.new(x = bar_index, y = zoneHigh, text = kind + " PINE_CONTEXT_ONLY", style = label.style_label_left, color = color.new(zoneColor, 70), textcolor = color.white, size = size.tiny) : na
+    zoneLabel = effectiveShowZoneStatusLabels ? label.new(x = bar_index, y = zoneHigh, text = kind + " PINE_VISUAL_ONLY", style = label.style_label_left, color = color.new(zoneColor, 70), textcolor = color.white, size = size.tiny) : na
     zone = SmiZone.new(zoneBox, midpointLine, zoneLabel, zoneLow, zoneHigh, midpoint, bull, false, false, false, false, kind, bar_index, na)
     array.push(zones, zone)
     f_trimZones(zones, maxCount)
@@ -147,10 +155,12 @@ f_updateZones(SmiZone[] zones) =>
             midNow = touchedNow and high >= zone.mid and low <= zone.mid
             touchBarForReaction = touchedNow ? bar_index : zone.lastTouchedBar
             recentTouch = not na(touchBarForReaction) and bar_index - touchBarForReaction <= reactionMaxBars
-            bullReactionMidpoint = recentTouch and close > zone.mid and close > open and close > zone.low
-            bearReactionMidpoint = recentTouch and close < zone.mid and close < open and close < zone.high
-            bullReactionOutside = recentTouch and close > zone.high and close > open
-            bearReactionOutside = recentTouch and close < zone.low and close < open
+            reactionBodyPass = not useAtrFilter or math.abs(close - open) >= atr * minReactionBodyAtr
+            reactionRangePass = not useAtrFilter or high - low >= atr * minReactionRangeAtr
+            bullReactionMidpoint = recentTouch and reactionBodyPass and reactionRangePass and close > zone.mid and close > open and close > zone.low
+            bearReactionMidpoint = recentTouch and reactionBodyPass and reactionRangePass and close < zone.mid and close < open and close < zone.high
+            bullReactionOutside = recentTouch and reactionBodyPass and reactionRangePass and close > zone.high and close > open
+            bearReactionOutside = recentTouch and reactionBodyPass and reactionRangePass and close < zone.low and close < open
             bullReaction = effectiveReactionMode == "Close outside zone" ? bullReactionOutside : bullReactionMidpoint
             bearReaction = effectiveReactionMode == "Close outside zone" ? bearReactionOutside : bearReactionMidpoint
             invalidNow = eligibleForLifecycle and confirmedBar and not zone.invalidated and (zone.bull ? close < zone.low : close > zone.high)
@@ -188,16 +198,26 @@ f_updateZones(SmiZone[] zones) =>
 f_findBullObOffset(int maxBack) =>
     int found = na
     for i = 1 to maxBack
-        if na(found) and close[i] < open[i]
+        originBodyPass = not useAtrFilter or math.abs(close[i] - open[i]) >= atr[i] * minObOriginBodyAtr
+        if na(found) and close[i] < open[i] and originBodyPass
             found := i
     found
 
 f_findBearObOffset(int maxBack) =>
     int found = na
     for i = 1 to maxBack
-        if na(found) and close[i] > open[i]
+        originBodyPass = not useAtrFilter or math.abs(close[i] - open[i]) >= atr[i] * minObOriginBodyAtr
+        if na(found) and close[i] > open[i] and originBodyPass
             found := i
     found
+
+f_hybridObLow(int offset) =>
+    bodyLow = math.min(open[offset], close[offset])
+    (bodyLow + low[offset]) / 2.0
+
+f_hybridObHigh(int offset) =>
+    bodyHigh = math.max(open[offset], close[offset])
+    (bodyHigh + high[offset]) / 2.0
 
 // Swing structure
 ph = ta.pivothigh(high, swingLen, swingLen)
@@ -245,10 +265,15 @@ if bosBear
 // FVG detection
 bullFvgGap = bar_index >= 2 ? low - high[2] : na
 bearFvgGap = bar_index >= 2 ? low[2] - high : na
-bullImpulse = bar_index >= 2 and close[1] > open[1]
-bearImpulse = bar_index >= 2 and close[1] < open[1]
-bullFvg = confirmedBar and showFvg and bar_index >= 2 and high[2] < low and (not requireImpulseCandle or bullImpulse) and (not useAtrFilter or bullFvgGap >= atr * minFvgAtr)
-bearFvg = confirmedBar and showFvg and bar_index >= 2 and low[2] > high and (not requireImpulseCandle or bearImpulse) and (not useAtrFilter or bearFvgGap >= atr * minFvgAtr)
+middleRange = bar_index >= 2 ? high[1] - low[1] : na
+bullCloseLocation = not na(middleRange) and middleRange > 0 ? (close[1] - low[1]) / middleRange : 0.5
+bearCloseLocation = not na(middleRange) and middleRange > 0 ? (high[1] - close[1]) / middleRange : 0.5
+bullImpulse = bar_index >= 2 and close[1] > open[1] and bullCloseLocation >= minDisplacementCloseLocation
+bearImpulse = bar_index >= 2 and close[1] < open[1] and bearCloseLocation >= minDisplacementCloseLocation
+bullFvgBps = bar_index >= 2 and high[2] > 0 ? bullFvgGap / high[2] * 10000.0 : na
+bearFvgBps = bar_index >= 2 and high > 0 ? bearFvgGap / high * 10000.0 : na
+bullFvg = confirmedBar and showFvg and bar_index >= 2 and high[2] < low and (not requireImpulseCandle or bullImpulse) and bullFvgBps >= minFvgBps and (not useAtrFilter or bullFvgGap >= atr * minFvgAtr)
+bearFvg = confirmedBar and showFvg and bar_index >= 2 and low[2] > high and (not requireImpulseCandle or bearImpulse) and bearFvgBps >= minFvgBps and (not useAtrFilter or bearFvgGap >= atr * minFvgAtr)
 
 if bullFvg
     f_addZone(fvgZones, maxFvgZones, "FVG", true, bar_index - 2, high[2], low)
@@ -257,28 +282,37 @@ if bearFvg
     f_addZone(fvgZones, maxFvgZones, "FVG", false, bar_index - 2, high, low[2])
 
 // Order block detection
-bullObOffset = bosBull and math.abs(close - open) >= atr * minObDisplacementAtr ? f_findBullObOffset(obLookback) : na
-bearObOffset = bosBear and math.abs(close - open) >= atr * minObDisplacementAtr ? f_findBearObOffset(obLookback) : na
+obDisplacementPass = not useAtrFilter or math.abs(close - open) >= atr * minObDisplacementAtr
+bullObOffset = bosBull and obDisplacementPass ? f_findBullObOffset(obLookback) : na
+bearObOffset = bosBear and obDisplacementPass ? f_findBearObOffset(obLookback) : na
 
 if showOb and not na(bullObOffset)
-    obLow = low[bullObOffset]
-    obHigh = high[bullObOffset]
+    obLow = f_hybridObLow(bullObOffset)
+    obHigh = f_hybridObHigh(bullObOffset)
     bullOriginBar = bar_index - bullObOffset
     if bullOriginBar != lastBullObOriginBar
         f_addZone(obZones, maxObZones, "OB", true, bullOriginBar, obLow, obHigh)
         lastBullObOriginBar := bullOriginBar
 
 if showOb and not na(bearObOffset)
-    obLow = low[bearObOffset]
-    obHigh = high[bearObOffset]
+    obLow = f_hybridObLow(bearObOffset)
+    obHigh = f_hybridObHigh(bearObOffset)
     bearOriginBar = bar_index - bearObOffset
     if bearOriginBar != lastBearObOriginBar
         f_addZone(obZones, maxObZones, "OB", false, bearOriginBar, obLow, obHigh)
         lastBearObOriginBar := bearOriginBar
 
 // Liquidity sweeps
-sellSideSweep = confirmedBar and showSweeps and not na(lastSwingLow) and not lastLowSwept and low < lastSwingLow and close > lastSwingLow
-buySideSweep = confirmedBar and showSweeps and not na(lastSwingHigh) and not lastHighSwept and high > lastSwingHigh and close < lastSwingHigh
+sellSideSweepExtension = not na(lastSwingLow) ? lastSwingLow - low : na
+buySideSweepExtension = not na(lastSwingHigh) ? high - lastSwingHigh : na
+sellSideSweepBps = not na(lastSwingLow) and lastSwingLow > 0 ? sellSideSweepExtension / lastSwingLow * 10000.0 : na
+buySideSweepBps = not na(lastSwingHigh) and lastSwingHigh > 0 ? buySideSweepExtension / lastSwingHigh * 10000.0 : na
+sellSideSweepBpsPass = not na(sellSideSweepBps) and sellSideSweepBps >= minSweepWickBps
+buySideSweepBpsPass = not na(buySideSweepBps) and buySideSweepBps >= minSweepWickBps
+sellSideSweepAtrPass = not useAtrFilter or (not na(sellSideSweepExtension) and sellSideSweepExtension >= atr * minSweepWickAtr)
+buySideSweepAtrPass = not useAtrFilter or (not na(buySideSweepExtension) and buySideSweepExtension >= atr * minSweepWickAtr)
+sellSideSweep = confirmedBar and showSweeps and not na(lastSwingLow) and not lastLowSwept and low < lastSwingLow and close > lastSwingLow and sellSideSweepBpsPass and sellSideSweepAtrPass
+buySideSweep = confirmedBar and showSweeps and not na(lastSwingHigh) and not lastHighSwept and high > lastSwingHigh and close < lastSwingHigh and buySideSweepBpsPass and buySideSweepAtrPass
 
 if sellSideSweep
     lastLowSwept := true
@@ -297,7 +331,7 @@ f_updateLiquidityLines()
 // Primitive visibility marker; it is not a candidate score or trading decision.
 var label qualityLabel = na
 if confirmedBar and effectiveShowContextBadge and barstate.islast
-    qualityText = fvgReaction or obReaction ? "PINE_REACTION_OBSERVED" : bullFvg or bearFvg or not na(bullObOffset) or not na(bearObOffset) ? "PINE_ZONE_AVAILABLE" : sellSideSweep or buySideSweep ? "PINE_SWEEP_OBSERVED" : "PINE_CONTEXT_ONLY"
+    qualityText = fvgReaction or obReaction ? "PINE_REACTION_OBSERVED_VISUAL_ONLY" : bullFvg or bearFvg or not na(bullObOffset) or not na(bearObOffset) ? "PINE_ZONE_AVAILABLE_VISUAL_ONLY" : sellSideSweep or buySideSweep ? "PINE_SWEEP_OBSERVED_VISUAL_ONLY" : "PINE_VISUAL_ONLY"
     if na(qualityLabel)
         qualityLabel := label.new(x = bar_index, y = high, text = qualityText, style = label.style_label_left, color = color.new(color.blue, 60), textcolor = color.white, size = size.small)
     else

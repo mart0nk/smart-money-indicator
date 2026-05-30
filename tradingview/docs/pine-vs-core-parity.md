@@ -2,11 +2,13 @@
 
 TypeScript core is the backend/package source of truth for Smart Money Indicator behavior.
 
-TradingView Pine is a standalone visual implementation of `packages/smart-money-indicator/docs/smi-rules-v1.md`.
+TradingView Pine is a standalone visual implementation of `docs/smi-rules-v1.md`.
 
 ## Parity Model
 
 Parity is semantic, not runtime-identical.
+
+Pine v1 uses strict visual defaults for FVG, order-block-style zones, reactions, and sweeps, but it remains a chart-scoped approximation. The TypeScript core remains canonical for profile resolution, scoring, lifecycle state, and zone-scoped evidence linking.
 
 The Pine script and TypeScript core should agree on core rule definitions:
 
